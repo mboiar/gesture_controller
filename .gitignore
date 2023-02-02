@@ -1,0 +1,6 @@
+*.py
+*.sln
+*.json
+*.vcxproj*
+x64/
+.vs/
