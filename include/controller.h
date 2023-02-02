@@ -21,15 +21,17 @@ class Tello {
 public:
 	int get_battery() { return 50; };
 	void send_rc_control(const vector<int>& vel);
+	void land();
 };
 
 template <class T>
 class Buffer {
-	std::vector<T> _buffer;
+	vector<int> _buffer;
+	int max_len;
 public:
 	unsigned int buffer_len;
-	Buffer(unsigned int bl) : buffer_len(bl) {
-		_buffer = vector<T>(bl);
+	Buffer(unsigned int bl, unsigned int size) : max_len(bl) {
+		_buffer = vector<int>(size);
 	}
 	void add(const T &elem);
 	T get();
@@ -44,7 +46,7 @@ class Controller {
 	constexpr static milliseconds GESTURE_TIMEOUT = milliseconds(1000);
 	Tello tello;
 	bool debug;
-	Buffer<string> buffer;
+	Buffer<Gesture> buffer;
 	FaceDetector face_detector;
 	GestureDetector gesture_detector;
 	int battery_stat = -1;
@@ -62,7 +64,7 @@ public:
 		debug(debug),
 		face_detector(),
 		gesture_detector(),
-		buffer(buffer_len) {};
+		buffer(buffer_len, GestureCount) {};
 
 	void run();
 	void detection_step(Mat*);

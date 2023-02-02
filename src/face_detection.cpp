@@ -8,6 +8,7 @@ FaceDetector::FaceDetector() {
 
 Detection FaceDetector::detect(const cv::Mat &img) {
     // TODO implement detection
+    return Detection();
 }
 
 void FaceDetector::visualize(cv::Mat* img, const Detection& detection) {

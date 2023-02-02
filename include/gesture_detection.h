@@ -3,7 +3,8 @@
 
 #include "detection.h"
 
-enum class Gesture {
+enum Gesture {
+	NoGesture = 0,
 	Left,
 	Right,
 	Up,
@@ -11,13 +12,20 @@ enum class Gesture {
 	Forward,
 	Back,
 	Stop,
-	Land
+	Land,
+	GestureCount
+};
+
+struct GestureDetection {
+	BoundingBox box;
+	Gesture gesture;
 };
 
 class GestureDetector {
 public:
-	Detection detect(const cv::Mat&);
-	void visualize(cv::Mat*, const Detection&, const Gesture&);
+	GestureDetector();
+	GestureDetection detect(const cv::Mat&);
+	void visualize(cv::Mat*, const GestureDetection&);
 };
 
 #endif

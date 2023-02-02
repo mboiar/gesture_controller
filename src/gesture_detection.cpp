@@ -3,13 +3,14 @@
 using cv::dnn::Net;
 
 GestureDetector::GestureDetector() {
-    // TODO setup detector
+	// TODO setup detector
 }
 
-Detection GestureDetector::detect(const cv::Mat& img) {
-    // TODO implement detection
+GestureDetection GestureDetector::detect(const cv::Mat& img) {
+	// TODO implement detection
+	return GestureDetection();
 }
 
-void GestureDetector::visualize(cv::Mat* img, const Detection& detection, const Gesture& gesture) {
-    // TODO implement visualization of detection results
+void GestureDetector::visualize(cv::Mat* img, const GestureDetection& detection) {
+	// TODO implement visualization of detection results
 }

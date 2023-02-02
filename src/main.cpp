@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include <D:\cpplibs\argparse\include\argparse\argparse.hpp>
+#include <argparse.hpp>
 
 #include "controller.h"
 

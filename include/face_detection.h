@@ -13,6 +13,7 @@ class FaceDetector {
 	Net ONet;
 	Net RNet;
 public:
+	FaceDetector();
 	Detection detect(const cv::Mat &);
 	void visualize(cv::Mat*, const Detection&);
 };
