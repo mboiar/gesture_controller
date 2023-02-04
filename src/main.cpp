@@ -51,39 +51,27 @@ int main(int argc, char* argv[]) {
          std::exit(1);
      }
 
+     const char* const TELLO_STREAM_URL{ "udp://0.0.0.0:11111" };
+
      auto verbose = parser.get<bool>("--verbose");
      auto mode = parser.get<string>("mode");
      auto log_level = parser.get<string>("--log-level");
      auto video_filepath = parser.get<string>("--save-video");
      parser.add_description("Control a Tello drone with gestures.");
 
+     spdlog::set_level(spdlog::level::debug);
+     //spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
+     auto console = spdlog::stdout_color_mt("console");
+     auto err_logger = spdlog::stderr_color_mt("stderr");
+
      int buffer_len = 5;
      Tello tello = Tello();
-     // TODO setup tello
-     Controller controller = Controller(tello, false);
+     //tello.connect();
+     //tello.streamon();
+
+     Controller controller = Controller(&tello, false);
      controller.run();
 
     return 0;
 }
-
-// TODO check that const T& is used (unmodified variable)
-//                 T* (modified variable)
-
-    // if mode == "webcam":
-    //     tello = DummyTello()
-    // else:
-    //     tello = Tello()
-
-    // tello.connect()
-    // tello.streamon()
-    // debug = True if mode == "tello-debug" else False
-    // buffer_len = 5
-    // DetectionRunner = TelloDetectionRunner(
-    //     tello,
-    //     buffer_len,
-    //     debug,
-    //     detection_logging_level=detection_log_level,
-    //     controller_logging_level=controller_log_level,
-    //     save_video=save_video,
-    // )
-    // DetectionRunner.run()
+ 

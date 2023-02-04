@@ -16,14 +16,19 @@ using cv::Mat;
 using std::atomic;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
-//using Clock = std::chrono::high_resolution_clock;
-//using TimePoint = std::chrono::time_point<chrono::system_clock>;
-
 class Tello {
+	spdlog::logger logger;
+	static const char TELLO_STREAM_URL[];
+	bool simulate;
+
 public:
-	int get_battery() { return 50; };
+	int get_battery();
 	void send_rc_control(const vector<int>& vel);
 	void land();
+	cv::VideoCapture get_video_stream();
+	Tello(bool sim = true) : logger("TELLO"), simulate(sim) {
+		logger.set_level(spdlog::level::info);
+	}
 };
 
 template <class T>
@@ -47,7 +52,7 @@ class Controller {
 	constexpr static long WAIT_BATTERY = 4000;
 	constexpr static milliseconds FACE_TIMEOUT = milliseconds(1000);
 	constexpr static milliseconds GESTURE_TIMEOUT = milliseconds(1000);
-	Tello tello;
+	Tello *tello;
 	bool debug;
 	Buffer<Gesture> buffer;
 	FaceDetector face_detector;
@@ -59,15 +64,18 @@ class Controller {
 	bool is_landing = false;
 	vector<int> vel = { 0 };
 	static const string cv_window_name;
+	spdlog::logger logger;
 	void _put_battery_on_frame(Mat *);
 public:
-	// TODO add logging
-	Controller(Tello& tello, bool debug) :
+	Controller(Tello* tello, bool debug) :
 		tello(tello),
 		debug(debug),
 		face_detector(),
 		gesture_detector(),
-		buffer(buffer_len, GestureCount) {};
+		logger("CONTROLLER"),
+		buffer(buffer_len, GestureCount) {
+		logger.set_level(spdlog::level::info);
+	};
 
 	void run();
 	void detection_step(Mat*);

@@ -12,11 +12,8 @@ using cv::dnn::Net;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
 class FaceDetector {
-	//Net PNet;
-	//Net ONet;
-	//Net RNet;
 	cv::CascadeClassifier classifier;
-	double scale = 3;
+	double scale = 4;
 public:
 	FaceDetector();
 	cv::Rect generate_bounding_box(const cv::Rect& face_box, const cv::Mat&, int w, int h);

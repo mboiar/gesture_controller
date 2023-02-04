@@ -38,11 +38,12 @@ Detection FaceDetector::detectAndDisplay(const cv::Mat &img) {
     // TODO get detection score
     double score = 0.99;
     Detection detection = Detection(max_face, score);
-    //cv::Rect scaled_box = detection.box;
     detection.box.x *= scale;
     detection.box.y *= scale;
     detection.box.width *= scale;
     detection.box.height *= scale;
+    spdlog::debug("Face: {:03.1f}% at ({} {} {} {})", score*100, max_face.x, max_face.y, max_face.x+max_face.width, max_face.y+max_face.height);
+
     return detection;
 }
 

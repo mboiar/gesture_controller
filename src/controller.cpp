@@ -21,7 +21,7 @@ const string Controller::cv_window_name = "Tello camera";
 void Controller::get_battery_stat() {
 	// modifies battery_stat
 	while (true) {
-		this->battery_stat = this->tello.get_battery();
+		this->battery_stat = tello->get_battery();
 		std::this_thread::sleep_for(milliseconds(WAIT_BATTERY));
 	}
 }
@@ -33,19 +33,15 @@ void Controller::run() {
 	std::thread battery_thread(&Controller::get_battery_stat, this);
 	battery_thread.detach();
 
-	// log
+	cv::VideoCapture cap = tello->get_video_stream();
 	cv::Mat frame1;
 	cv::namedWindow(cv_window_name);
-	cv::VideoCapture cap(0);
-	if (!cap.isOpened()) {
-		// log
-		throw std::exception("Unable to open video stream");
-	}
+
 	double frame_count = 0;
 	TimePoint start_time = system_clock::now();
 	TimePoint end_time;
 	double fps = 0;
-
+	logger.info("Starting detection");
 
 	while (true) {
 		cap >> frame1;
@@ -115,70 +111,61 @@ void Controller::send_command() {
 		if (!this->stop_tello) {
 			if ((system_clock::now() - this->_last_face) > FACE_TIMEOUT ||
 				(system_clock::now() - this->_last_gesture) > GESTURE_TIMEOUT) {
-				std::cout << "No face or gesture: stopping Tello\n";
+				spdlog::info("No face or gesture: stopping Tello");
 				this->stop();
 			}
 			else {
 				vector<int> vel = { 0, 0, 0, -1 };
 				Gesture gesture = this->buffer.get();
-				//std::cout << gesture << std::endl;
+
 				if (gesture != NoGesture) {
-					// log
-					std::cout << "Received gesture: " << gesture << std::endl;
-				}
-				if (!this->is_landing) {
-					switch (gesture)
-					{
-					case NoGesture:
-						break;
-					case Stop:
-						this->stop();
-						break;
-					case Left:
-						vel.at(0) = -1*dw[0];
-						//std::cout << vel.at(0) << std::endl;
-						vel.at(3) = 0;
-						break;
-					case Right:
-						vel.at(0) = dw[0];
-						vel.at(3) = 0;
-						break;
-					case Up:
-						vel.at(2) = dw[2];
-						vel.at(3) = 0;
-						break;
-					case Down:
-						vel.at(2) = -1*dw[2];
-						vel.at(3) = 0;
-						break;
-					case Forward:
-						vel.at(1) = dw[1];
-						vel.at(3) = 0;
-						break;
-					case Back:
-						vel.at(1) = -1*dw[1];
-						vel.at(3) = 0;
-						break;
-					case Land:
-						this->tello.land();
-						this->is_landing = true;
-						break;
-					default:
-						break;
+					spdlog::info("Received gesture {}", gesture);
+					if (!this->is_landing) {
+						switch (gesture)
+						{
+						case NoGesture:
+							break;
+						case Stop:
+							this->stop();
+							break;
+						case Left:
+							vel.at(0) = -1*dw[0];
+							vel.at(3) = 0;
+							break;
+						case Right:
+							vel.at(0) = dw[0];
+							vel.at(3) = 0;
+							break;
+						case Up:
+							vel.at(2) = dw[2];
+							vel.at(3) = 0;
+							break;
+						case Down:
+							vel.at(2) = -1*dw[2];
+							vel.at(3) = 0;
+							break;
+						case Forward:
+							vel.at(1) = dw[1];
+							vel.at(3) = 0;
+							break;
+						case Back:
+							vel.at(1) = -1*dw[1];
+							vel.at(3) = 0;
+							break;
+						case Land:
+							tello->land();
+							this->is_landing = true;
+							break;
+						default:
+							break;
+						}
 					}
-					//std::cout << vel.at(0) << std::endl;
 
-				}
-				//std::cout << vel.at(0) << std::endl;
-
-				if (vel.at(3) != -1 && this->vel != vel) {
-					// log
-					this->vel = vel;
-					//std::cout << vel.at(0) << std::endl;
-					//for (auto i : vel) std::cout << i << " ";
-					//std::cout << std::endl;
-					if (!this->debug) {
-						this->tello.send_rc_control(vel);
+					if (vel.at(3) != -1 && this->vel != vel) {
+						this->vel = vel;
+						if (!this->debug) {
+							tello->send_rc_control(vel);
+						}
 					}
 				}
 			}
@@ -191,7 +178,7 @@ void Controller::stop() {
 	// modifies vel, stop_tello
 	this->vel = { 0, 0, 0, 0 };
 	this->stop_tello = true;
-	this->tello.send_rc_control(this->vel);
+	tello->send_rc_control(this->vel);
 }
 
 void Controller::_put_battery_on_frame(cv::Mat* img) {
@@ -225,15 +212,36 @@ T Buffer<T>::get() {
 		}
 }
 
+const char Tello::TELLO_STREAM_URL[] = "udp://0.0.0.0:11111";
+
 void Tello::send_rc_control(const vector<int>& vel) {
-	// log
-	std::cout << "rc ";
-	for (auto vel_i : vel) {
-		std::cout << vel_i << " ";
-	}
-	std::cout << std::endl;
+	spdlog::info("rc {} {} {} {}", vel.at(0), vel.at(1), vel.at(2), vel.at(3));
+	//for (auto vel_i : vel) {
+	//	std::cout << vel_i << " ";
+	//}
+	//std::cout << std::endl;
 }
 
 void Tello::land() {
-	// log
+	spdlog::info("land");
+}
+
+int Tello::get_battery() {
+	spdlog::info("Battery: {}%", 100);
+	return 100;
+}
+
+cv::VideoCapture Tello::get_video_stream() {
+	cv::VideoCapture cap;
+	if (simulate) {
+		cap = cv::VideoCapture(0);
+	}
+	else {
+		cap = cv::VideoCapture(TELLO_STREAM_URL, cv::CAP_FFMPEG);
+	}
+	if (!cap.isOpened()) {
+		spdlog::error("Unable to get video stream");
+		// TODO handle error
+	}
+	return cap;
 }

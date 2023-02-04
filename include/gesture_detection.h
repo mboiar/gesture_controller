@@ -27,7 +27,7 @@ struct GestureDetection {
 };
 
 class GestureDetector {
-	int scale = 3;
+	int scale = 4;
 public:
 	GestureDetector();
 	GestureDetection detect(const cv::Mat&);

@@ -19,7 +19,9 @@ GestureDetector::GestureDetector() {
 
 GestureDetection GestureDetector::detect(const cv::Mat& img) {
 	// TODO implement detection
-	return GestureDetection(0.99, Left);
+    GestureDetection detection = GestureDetection(0.99, Left);
+    spdlog::debug("Gesture {}: {:03.1f}%", detection.gesture, detection.score*100);
+	return detection;
 }
 
 void GestureDetector::visualize(cv::Mat* img, const GestureDetection& detection, const cv::Rect& gesture_box) {
