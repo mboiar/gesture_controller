@@ -12,12 +12,14 @@ using std::chrono::system_clock;
 using std::chrono::milliseconds;
 using std::string;
 using std::vector;
+using std::atomic;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
-
+using namespace std::chrono_literals;
 
 const string Controller::cv_window_name = "Tello camera";
 
 void Controller::get_battery_stat() {
+	// modifies battery_stat
 	while (true) {
 		this->battery_stat = this->tello.get_battery();
 		std::this_thread::sleep_for(milliseconds(WAIT_BATTERY));
@@ -32,100 +34,99 @@ void Controller::run() {
 	battery_thread.detach();
 
 	// log
-	cv::Mat image;
+	cv::Mat frame1;
 	cv::namedWindow(cv_window_name);
 	cv::VideoCapture cap(0);
 	if (!cap.isOpened()) {
 		// log
 		throw std::exception("Unable to open video stream");
 	}
+	double frame_count = 0;
+	TimePoint start_time = system_clock::now();
+	TimePoint end_time;
+	double fps = 0;
+
+
 	while (true) {
-		cap >> image;
-		this->detection_step(&image);
-		cv::imshow(cv_window_name, image);
-		if (cv::waitKey(25) == 27 ||
+		cap >> frame1;
+		if (frame1.empty()) {
+			// log
+			continue;
+		}
+		// get fps
+		if (++frame_count >= 10) {
+			end_time = system_clock::now();
+			fps = frame_count / ((end_time - start_time)/1.0s);
+			start_time = end_time;
+			frame_count = 0;
+		}
+		this->detection_step(&frame1);
+
+		// put fps
+		cv::putText(frame1, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, (0, 255, 255), 2);
+		// put battery_stat
+		this->_put_battery_on_frame(&frame1);
+		
+		cv::imshow(cv_window_name, frame1);
+
+		char key = (char)cv::waitKey(10);
+		if (key == 27 || key == 'q' ||
 			cv::getWindowProperty(cv_window_name, cv::WND_PROP_VISIBLE) < 1
 			) {
-			cv::destroyAllWindows();
+			//cv::destroyAllWindows();
 			// REVIEW threads clean exit
 			// TODO tello clean-up
 			break;
 		}
-
 	}
 	// TODO catch Ctrl+C KeyboardInterrupt (<csignal>?)
 }
 
-//        try:
-//            while True:
-//                img = self.frame_read.frame
-//                if img is None:
-//                    continue
-//                img = self.step(img)
-//                if self.save_video:
-//                    writer.write(img)
-//                cv2.imshow(self.CAMERA_NAME, img)
-//
-//                if cv2.waitKey(1) == 27 or (
-//                    int(
-//                        cv2.getWindowProperty(
-//                            self.CAMERA_NAME, cv2.WND_PROP_VISIBLE
-//                        )
-//                    )
-//                    < 1
-//                ):
-//                    timer_bat.cancel()
-//                    timer_com.cancel()
-//                    if not self.debug:
-//                        self.tello.land()
-//                    if self.save_video:
-//                        writer.release()
-//                    self.tello.streamoff()
-//                    break
-//        except KeyboardInterrupt:
-//            self.logger.info("KeyboardInterrupt: exiting")
-//            timer_bat.cancel()
-//            timer_com.cancel()
-//            if not self.debug:
-//                self.tello.land()
-//            if self.save_video:
-//                        writer.release()
-//            self.tello.streamoff()
-
 void Controller::detection_step(cv::Mat* img) {
-	this->_put_battery_on_frame(img);
+	// sets _last_face, _last_gesture, stop_tello, buffer
+	// accesses face_detector, gesture_detector
 
-	Detection face_detection = this->face_detector.detect(*img);
-	if (face_detection.box.score > 0) {
+	Detection face_detection = this->face_detector.detectAndDisplay(*img);
+	if (face_detection.score > 0) {
 		this->_last_face = system_clock::now();
-		// TODO crop image for gesture detection
-		cv::Mat cropped = *img;
+		cv::Scalar color = cv::Scalar(0, 0, 255);
+
 		this->face_detector.visualize(img, face_detection);
-		GestureDetection gesture_detection = this->gesture_detector.detect(cropped);
-		if (gesture_detection.box.score > 0) {
+		cv::Rect gesture_box = this->face_detector.generate_bounding_box(face_detection.box, *img, 200, 200);
+		cv::rectangle(*img, gesture_box, color, 2);
+
+		cv::Mat ROI(*img, gesture_box);
+		GestureDetection gesture_detection = this->gesture_detector.detect(ROI);
+		if (gesture_detection.score > 0) {
 			this->_last_gesture = system_clock::now();
 			this->stop_tello = false;
 			this->buffer.add(gesture_detection.gesture);
-			this->gesture_detector.visualize(img, gesture_detection);
+			this->gesture_detector.visualize(img, gesture_detection, gesture_box);
 		}
 		// TODO draw bounds
 	}
 }
 
 void Controller::send_command() {
+	// accesses _last_face, _last_gesture, stop, buffer, is_landing, tello, vel, debug, stop_tello
+	// sets vel, buffer
+
 	while (true) {
 		if (!this->stop_tello) {
-			if ((system_clock::now() - this->_last_face) > this->FACE_TIMEOUT ||
-				(system_clock::now() - this->_last_gesture) > this->GESTURE_TIMEOUT) {
+			if ((system_clock::now() - this->_last_face) > FACE_TIMEOUT ||
+				(system_clock::now() - this->_last_gesture) > GESTURE_TIMEOUT) {
+				std::cout << "No face or gesture: stopping Tello\n";
 				this->stop();
 			}
 			else {
+				vector<int> vel = { 0, 0, 0, -1 };
 				Gesture gesture = this->buffer.get();
+				//std::cout << gesture << std::endl;
 				if (gesture != NoGesture) {
 					// log
+					std::cout << "Received gesture: " << gesture << std::endl;
 				}
 				if (!this->is_landing) {
-					vector<int> vel = { -1, -1, -1, -1 };
 					switch (gesture)
 					{
 					case NoGesture:
@@ -134,22 +135,29 @@ void Controller::send_command() {
 						this->stop();
 						break;
 					case Left:
-						vel = { -dw[0], 0, 0, 0 };
+						vel.at(0) = -1*dw[0];
+						//std::cout << vel.at(0) << std::endl;
+						vel.at(3) = 0;
 						break;
 					case Right:
-						vel = { dw[0], 0, 0, 0 };
+						vel.at(0) = dw[0];
+						vel.at(3) = 0;
 						break;
 					case Up:
-						vel = { 0, 0, dw[2], 0 };
+						vel.at(2) = dw[2];
+						vel.at(3) = 0;
 						break;
 					case Down:
-						vel = { 0, 0, -dw[2], 0 };
+						vel.at(2) = -1*dw[2];
+						vel.at(3) = 0;
 						break;
 					case Forward:
-						vel = { 0, dw[1], 0, 0 };
+						vel.at(1) = dw[1];
+						vel.at(3) = 0;
 						break;
 					case Back:
-						vel = { 0, -dw[1], 0, 0 };
+						vel.at(1) = -1*dw[1];
+						vel.at(3) = 0;
 						break;
 					case Land:
 						this->tello.land();
@@ -158,10 +166,17 @@ void Controller::send_command() {
 					default:
 						break;
 					}
+					//std::cout << vel.at(0) << std::endl;
+
 				}
-				if (vel.at(3) != -1) {
+				//std::cout << vel.at(0) << std::endl;
+
+				if (vel.at(3) != -1 && this->vel != vel) {
 					// log
 					this->vel = vel;
+					//std::cout << vel.at(0) << std::endl;
+					//for (auto i : vel) std::cout << i << " ";
+					//std::cout << std::endl;
 					if (!this->debug) {
 						this->tello.send_rc_control(vel);
 					}
@@ -173,18 +188,22 @@ void Controller::send_command() {
 }
 
 void Controller::stop() {
+	// modifies vel, stop_tello
 	this->vel = { 0, 0, 0, 0 };
 	this->stop_tello = true;
 	this->tello.send_rc_control(this->vel);
 }
 
 void Controller::_put_battery_on_frame(cv::Mat* img) {
+	// accesses battery_stat
 	string text("No battery info");
 	if (this->battery_stat > 0) {
 		text = std::to_string(this->battery_stat) + "%";
 	}
 	cv::putText(*img, text, cv::Point(20, 100), 1, 2, (0, 255, 255), 2);
 }
+
+
 
 template<class T>
 void Buffer<T>::add(const T& elem) {
@@ -197,12 +216,12 @@ T Buffer<T>::get() {
 		auto max_count = std::max_element(_buffer.begin(), _buffer.end());
 		if (max_count != _buffer.end() && *max_count >= max_len) {
 			T val = static_cast<T>(std::distance(_buffer.begin(), max_count));
-			_buffer.clear();
+			//std::cout << *max_count << std::endl;
+			_buffer.assign(size, 0);
 			return val;
 		}
 		else {
-			T val{};
-			return val;
+			return (T)0;
 		}
 }
 

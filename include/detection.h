@@ -13,7 +13,11 @@ struct BoundingBox {
 };
 
 struct Detection {
-	BoundingBox box;
+	//BoundingBox box;
+	cv::Rect box = cv::Rect();
+	double score = 0;
+	Detection(cv::Rect box, double score) : box(box), score(score) {};
+	Detection(): box(), score(0) {}
 };
 
 #endif // !DETECTION_H

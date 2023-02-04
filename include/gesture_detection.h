@@ -2,6 +2,7 @@
 #define GESTURE_DETECTION_H
 
 #include "detection.h"
+#include <map>
 
 enum Gesture {
 	NoGesture = 0,
@@ -16,16 +17,21 @@ enum Gesture {
 	GestureCount
 };
 
+
 struct GestureDetection {
-	BoundingBox box;
-	Gesture gesture;
+	//cv::Rect box = cv::Rect();
+	double score = 0;
+	Gesture gesture = NoGesture;
+	GestureDetection(double score, Gesture gesture) : score(score), gesture(gesture) {}
+	GestureDetection() : score(0), gesture(NoGesture) {}
 };
 
 class GestureDetector {
+	int scale = 3;
 public:
 	GestureDetector();
 	GestureDetection detect(const cv::Mat&);
-	void visualize(cv::Mat*, const GestureDetection&);
+	void visualize(cv::Mat*, const GestureDetection&, const cv::Rect&);
 };
 
 #endif
