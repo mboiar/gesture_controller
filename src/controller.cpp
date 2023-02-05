@@ -41,7 +41,7 @@ void Controller::run() {
 	TimePoint start_time = system_clock::now();
 	TimePoint end_time;
 	double fps = 0;
-	logger.info("Starting detection");
+	logger->info("Starting detection");
 
 	while (true) {
 		cap >> frame1;
@@ -111,7 +111,7 @@ void Controller::send_command() {
 		if (!this->stop_tello) {
 			if ((system_clock::now() - this->_last_face) > FACE_TIMEOUT ||
 				(system_clock::now() - this->_last_gesture) > GESTURE_TIMEOUT) {
-				spdlog::info("No face or gesture: stopping Tello");
+				logger->info("No face or gesture: stopping Tello");
 				this->stop();
 			}
 			else {
@@ -119,7 +119,7 @@ void Controller::send_command() {
 				Gesture gesture = this->buffer.get();
 
 				if (gesture != NoGesture) {
-					spdlog::info("Received gesture {}", gesture);
+					logger->debug("Received gesture {}", gesture);
 					if (!this->is_landing) {
 						switch (gesture)
 						{
@@ -215,7 +215,7 @@ T Buffer<T>::get() {
 const char Tello::TELLO_STREAM_URL[] = "udp://0.0.0.0:11111";
 
 void Tello::send_rc_control(const vector<int>& vel) {
-	spdlog::info("rc {} {} {} {}", vel.at(0), vel.at(1), vel.at(2), vel.at(3));
+	logger->info("rc {} {} {} {}", vel.at(0), vel.at(1), vel.at(2), vel.at(3));
 	//for (auto vel_i : vel) {
 	//	std::cout << vel_i << " ";
 	//}
@@ -223,11 +223,11 @@ void Tello::send_rc_control(const vector<int>& vel) {
 }
 
 void Tello::land() {
-	spdlog::info("land");
+	logger->info("land");
 }
 
 int Tello::get_battery() {
-	spdlog::info("Battery: {}%", 100);
+	logger->info("Battery: {}%", 100);
 	return 100;
 }
 
@@ -240,7 +240,7 @@ cv::VideoCapture Tello::get_video_stream() {
 		cap = cv::VideoCapture(TELLO_STREAM_URL, cv::CAP_FFMPEG);
 	}
 	if (!cap.isOpened()) {
-		spdlog::error("Unable to get video stream");
+		logger->error("Unable to get video stream");
 		// TODO handle error
 	}
 	return cap;

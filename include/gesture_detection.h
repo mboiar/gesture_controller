@@ -4,6 +4,8 @@
 #include "detection.h"
 #include <map>
 
+using AsyncLogger = std::shared_ptr<spdlog::logger>;
+
 enum Gesture {
 	NoGesture = 0,
 	Left,
@@ -28,6 +30,7 @@ struct GestureDetection {
 
 class GestureDetector {
 	int scale = 4;
+	AsyncLogger logger;
 public:
 	GestureDetector();
 	GestureDetection detect(const cv::Mat&);

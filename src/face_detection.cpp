@@ -7,12 +7,20 @@ using std::chrono::system_clock;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
 FaceDetector::FaceDetector() {
+    string name("DETECTION");
+    logger = spdlog::get(name);
+    if (!logger) {
+        logger = spdlog::stdout_color_mt(name);
+    }
+    logger->set_level(spdlog::level::info);
+
     classifier = cv::CascadeClassifier();
     //string classifier_path("data/cascade/lbpcascade_frontalface_improved.xml");
     string classifier_path("data/cascade/haarcascade_frontalface_default.xml");
     string classifier_name = cv::samples::findFileOrKeep(classifier_path);
     if (!classifier.load(classifier_name)) {
-        throw std::exception("Error loading classifier");
+        logger->error("Error loading classifier");
+        // TODO handle error
     }
 }
 
@@ -42,7 +50,7 @@ Detection FaceDetector::detectAndDisplay(const cv::Mat &img) {
     detection.box.y *= scale;
     detection.box.width *= scale;
     detection.box.height *= scale;
-    spdlog::debug("Face: {:03.1f}% at ({} {} {} {})", score*100, max_face.x, max_face.y, max_face.x+max_face.width, max_face.y+max_face.height);
+    logger->debug("Face: {:03.1f}% at ({} {} {} {})", score*100, max_face.x, max_face.y, max_face.x+max_face.width, max_face.y+max_face.height);
 
     return detection;
 }

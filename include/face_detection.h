@@ -10,9 +10,11 @@ using std::vector;
 using std::ostream;
 using cv::dnn::Net;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
+using AsyncLogger = std::shared_ptr<spdlog::logger>;
 
 class FaceDetector {
 	cv::CascadeClassifier classifier;
+	AsyncLogger logger;
 	double scale = 4;
 public:
 	FaceDetector();

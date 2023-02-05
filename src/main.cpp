@@ -59,10 +59,10 @@ int main(int argc, char* argv[]) {
      auto video_filepath = parser.get<string>("--save-video");
      parser.add_description("Control a Tello drone with gestures.");
 
-     spdlog::set_level(spdlog::level::debug);
+     spdlog::set_level(spdlog::level::info);
      //spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
-     auto console = spdlog::stdout_color_mt("console");
-     auto err_logger = spdlog::stderr_color_mt("stderr");
+     //auto console = spdlog::stdout_color_mt("console");
+     //auto err_logger = spdlog::stderr_color_mt("stderr");
 
      int buffer_len = 5;
      Tello tello = Tello();

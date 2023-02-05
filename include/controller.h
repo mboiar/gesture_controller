@@ -15,9 +15,11 @@ using std::chrono::milliseconds;
 using cv::Mat;
 using std::atomic;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
+using AsyncLogger = std::shared_ptr<spdlog::logger>;
+
 
 class Tello {
-	spdlog::logger logger;
+	AsyncLogger logger;
 	static const char TELLO_STREAM_URL[];
 	bool simulate;
 
@@ -26,8 +28,13 @@ public:
 	void send_rc_control(const vector<int>& vel);
 	void land();
 	cv::VideoCapture get_video_stream();
-	Tello(bool sim = true) : logger("TELLO"), simulate(sim) {
-		logger.set_level(spdlog::level::info);
+	Tello(bool sim = true) : simulate(sim) {
+		string name("TELLO");
+		logger = spdlog::get(name);
+		if (!logger) {
+			logger = spdlog::stdout_color_mt(name);
+		}
+		logger->set_level(spdlog::level::info);
 	}
 };
 
@@ -64,7 +71,7 @@ class Controller {
 	bool is_landing = false;
 	vector<int> vel = { 0 };
 	static const string cv_window_name;
-	spdlog::logger logger;
+	AsyncLogger logger;
 	void _put_battery_on_frame(Mat *);
 public:
 	Controller(Tello* tello, bool debug) :
@@ -72,9 +79,13 @@ public:
 		debug(debug),
 		face_detector(),
 		gesture_detector(),
-		logger("CONTROLLER"),
 		buffer(buffer_len, GestureCount) {
-		logger.set_level(spdlog::level::info);
+		string name("CONTROLLER");
+		logger = spdlog::get(name);
+		if (!logger) {
+			logger = spdlog::stdout_color_mt(name);
+		}
+		logger->set_level(spdlog::level::info);
 	};
 
 	void run();

@@ -1,6 +1,7 @@
 #include "gesture_detection.h"
 
 using cv::dnn::Net;
+using std::string;
 
 std::map<int, std::string> gesture_map = {
     { 1, "Left"},
@@ -14,13 +15,18 @@ std::map<int, std::string> gesture_map = {
 };
 
 GestureDetector::GestureDetector() {
-	// TODO setup detector
+    string name("DETECTION");
+    logger = spdlog::get(name);
+    if (!logger) {
+        logger = spdlog::stdout_color_mt(name);
+    }
+    logger->set_level(spdlog::level::info);
 }
 
 GestureDetection GestureDetector::detect(const cv::Mat& img) {
 	// TODO implement detection
     GestureDetection detection = GestureDetection(0.99, Left);
-    spdlog::debug("Gesture {}: {:03.1f}%", detection.gesture, detection.score*100);
+    logger->debug("Gesture {}: {:03.1f}%", detection.gesture, detection.score*100);
 	return detection;
 }
 
