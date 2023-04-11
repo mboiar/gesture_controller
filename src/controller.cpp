@@ -4,9 +4,12 @@
 #include <atomic>
 #include <map>
 #include <algorithm>
+#include <regex>
+#include<fstream>
 //#include <csignal>
-
 #include "controller.h"
+//#include "opencv2/core_detect.hpp"
+using namespace cv;
 
 using std::chrono::system_clock;
 using std::chrono::milliseconds;
@@ -34,7 +37,7 @@ void Controller::run() {
 	battery_thread.detach();
 
 	cv::VideoCapture cap = tello->get_video_stream();
-	cv::Mat frame1;
+	cv::Mat frame;
 	cv::namedWindow(cv_window_name);
 
 	double frame_count = 0;
@@ -44,33 +47,32 @@ void Controller::run() {
 	logger->info("Starting detection");
 
 	while (true) {
-		cap >> frame1;
-		if (frame1.empty()) {
-			// log
+		cap >> frame;
+		if (frame.empty()) {
+			logger->info("Skipping empty frame");
 			continue;
 		}
 		// get fps
+		//std::cout << frame.size();
 		if (++frame_count >= 10) {
 			end_time = system_clock::now();
 			fps = frame_count / ((end_time - start_time)/1.0s);
 			start_time = end_time;
 			frame_count = 0;
 		}
-		this->detection_step(&frame1);
+		this->detection_step(&frame);
 
 		// put fps
-		cv::putText(frame1, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, (0, 255, 255), 2);
+		cv::putText(frame, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, (0, 255, 255), 2);
 		// put battery_stat
-		this->_put_battery_on_frame(&frame1);
+		this->_put_battery_on_frame(&frame);
 		
-		cv::imshow(cv_window_name, frame1);
+		cv::imshow(cv_window_name, frame);
 
 		char key = (char)cv::waitKey(10);
 		if (key == 27 || key == 'q' ||
 			cv::getWindowProperty(cv_window_name, cv::WND_PROP_VISIBLE) < 1
 			) {
-			//cv::destroyAllWindows();
-			// REVIEW threads clean exit
 			// TODO tello clean-up
 			break;
 		}
@@ -87,19 +89,28 @@ void Controller::detection_step(cv::Mat* img) {
 		this->_last_face = system_clock::now();
 		cv::Scalar color = cv::Scalar(0, 0, 255);
 
-		this->face_detector.visualize(img, face_detection);
-		cv::Rect gesture_box = this->face_detector.generate_bounding_box(face_detection.box, *img, 200, 200);
+		face_detector.visualize(img, face_detection);
+		cv::Rect gesture_box = face_detector.generate_bounding_box(face_detection.box, *img, 256, 256);
 		cv::rectangle(*img, gesture_box, color, 2);
 
-		cv::Mat ROI(*img, gesture_box);
-		GestureDetection gesture_detection = this->gesture_detector.detect(ROI);
+		cv::Mat gesture_detection_area = (*img)(gesture_box);
+		//cv::imshow("Fucked up", gesture_detection_area);
+		//return;
+		//logger->info(std::to_string(gesture_detection_area));
+		Detection gesture_detection = gesture_detector.detect(gesture_detection_area);
+		cv::Rect box_scaled(gesture_detection.box);
+		box_scaled.x += gesture_box.x;
+		box_scaled.y += gesture_box.y;
+		cv::rectangle(*img, box_scaled, color, 2);
+
 		if (gesture_detection.score > 0) {
-			this->_last_gesture = system_clock::now();
-			this->stop_tello = false;
-			this->buffer.add(gesture_detection.gesture);
-			this->gesture_detector.visualize(img, gesture_detection, gesture_box);
+			_last_gesture = system_clock::now();
+			stop_tello = false;
+			cv::Mat gesture_region = gesture_detection_area(gesture_detection.box);
+			ClassifierOutput classified_gesture = gesture_detector.classify(gesture_region);
+			buffer.add(classified_gesture.classId);
+			gesture_detector.visualize(img, classified_gesture, gesture_box);
 		}
-		// TODO draw bounds
 	}
 }
 
@@ -116,7 +127,7 @@ void Controller::send_command() {
 			}
 			else {
 				vector<int> vel = { 0, 0, 0, -1 };
-				Gesture gesture = this->buffer.get();
+				Gesture gesture = static_cast<Gesture>(buffer.get());
 
 				if (gesture != NoGesture) {
 					logger->debug("Received gesture {}", gesture);
@@ -192,56 +203,18 @@ void Controller::_put_battery_on_frame(cv::Mat* img) {
 
 
 
-template<class T>
-void Buffer<T>::add(const T& elem) {
-	this->_buffer.at(elem)++;
+void Buffer::add(size_t elem) {
+	_buffer.at(elem)++;
 }
 
-template <class T>
-T Buffer<T>::get() {
-		// REVIEW actual buffer
+size_t Buffer::get() {
 		auto max_count = std::max_element(_buffer.begin(), _buffer.end());
 		if (max_count != _buffer.end() && *max_count >= max_len) {
-			T val = static_cast<T>(std::distance(_buffer.begin(), max_count));
-			//std::cout << *max_count << std::endl;
-			_buffer.assign(size, 0);
+			size_t val = (std::distance(_buffer.begin(), max_count));
+			_buffer.assign(size, default_val);
 			return val;
 		}
 		else {
-			return (T)0;
+			return default_val;
 		}
-}
-
-const char Tello::TELLO_STREAM_URL[] = "udp://0.0.0.0:11111";
-
-void Tello::send_rc_control(const vector<int>& vel) {
-	logger->info("rc {} {} {} {}", vel.at(0), vel.at(1), vel.at(2), vel.at(3));
-	//for (auto vel_i : vel) {
-	//	std::cout << vel_i << " ";
-	//}
-	//std::cout << std::endl;
-}
-
-void Tello::land() {
-	logger->info("land");
-}
-
-int Tello::get_battery() {
-	logger->info("Battery: {}%", 100);
-	return 100;
-}
-
-cv::VideoCapture Tello::get_video_stream() {
-	cv::VideoCapture cap;
-	if (simulate) {
-		cap = cv::VideoCapture(0);
-	}
-	else {
-		cap = cv::VideoCapture(TELLO_STREAM_URL, cv::CAP_FFMPEG);
-	}
-	if (!cap.isOpened()) {
-		logger->error("Unable to get video stream");
-		// TODO handle error
-	}
-	return cap;
 }

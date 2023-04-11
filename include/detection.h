@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include<vector>
+#include<string>
 
 #include <opencv2\opencv.hpp>
 #include "spdlog/spdlog.h"

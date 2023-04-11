@@ -4,3 +4,6 @@
 *.vcxproj*
 x64/
 .vs/
+
+data
+*.ipynb

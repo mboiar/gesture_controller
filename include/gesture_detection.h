@@ -3,8 +3,12 @@
 
 #include "detection.h"
 #include <map>
+//#include "GRT/GRT.h"
+//#include "darkhelp/DarkHelp.hpp"
 
 using AsyncLogger = std::shared_ptr<spdlog::logger>;
+using std::vector;
+using std::string;
 
 enum Gesture {
 	NoGesture = 0,
@@ -20,21 +24,33 @@ enum Gesture {
 };
 
 
-struct GestureDetection {
-	//cv::Rect box = cv::Rect();
+struct ClassifierOutput {
 	double score = 0;
-	Gesture gesture = NoGesture;
-	GestureDetection(double score, Gesture gesture) : score(score), gesture(gesture) {}
-	GestureDetection() : score(0), gesture(NoGesture) {}
+	int classId = 0;
+	vector<double> landmarks;
+	ClassifierOutput(double score, int classId) : score(score), classId(classId) {}
+	ClassifierOutput(double score, int classId, const vector<double>& landmarks) : score(score), classId(classId), landmarks(landmarks) {}
+	ClassifierOutput() : score(0), classId(0) {}
 };
 
+
 class GestureDetector {
-	int scale = 4;
+	double scale = 1.0;
 	AsyncLogger logger;
+	cv::dnn::Net classifier_net;
+	cv::dnn::DetectionModel detector_net;
+	cv::dnn::Net detector_net1;
+	cv::Size detector_dims;
+	cv::dnn::DetectionModel ssdlite;
+	//DarkHelp::NN nn;
 public:
-	GestureDetector();
-	GestureDetection detect(const cv::Mat&);
-	void visualize(cv::Mat*, const GestureDetection&, const cv::Rect&);
+	GestureDetector(
+		//const string& detector_model = "data/ssdlite.onnx",
+		const string& classifier_model = "data/resnet18.onnx"
+	);
+	Detection detect(const cv::Mat&);
+	void visualize(cv::Mat*, const ClassifierOutput&, const cv::Rect&);
+	ClassifierOutput classify(const cv::Mat&);
 };
 
 #endif
