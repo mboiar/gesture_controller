@@ -11,3 +11,4 @@ data
 CMakeFiles
 *.cmake
 CMakeCache.txt
+bin
