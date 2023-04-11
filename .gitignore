@@ -7,3 +7,7 @@ x64/
 
 data
 *.ipynb
+.editorconfig
+CMakeFiles
+*.cmake
+CMakeCache.txt
