@@ -7,13 +7,13 @@
 #include <chrono>
 #include <atomic>
 
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 #include "face_detection.h"
 #include "gesture_detection.h"
-#include "tello.h"
+#include "drone.h"
 
 using std::string;
 using std::vector;
@@ -45,7 +45,7 @@ class Controller {
 	constexpr static long WAIT_BATTERY = 4000;
 	constexpr static milliseconds FACE_TIMEOUT = milliseconds(1000);
 	constexpr static milliseconds GESTURE_TIMEOUT = milliseconds(1000);
-	Tello *tello;
+	Drone *drone;
 	bool debug;
 	Buffer buffer;
 	FaceDetector face_detector;
@@ -53,15 +53,15 @@ class Controller {
 	atomic<int> battery_stat = -1;
 	TimePoint _last_gesture = TimePoint();
 	TimePoint _last_face = TimePoint();
-	bool stop_tello = false;
+	bool stop_drone = false;
 	bool is_landing = false;
 	vector<int> vel = { 0 };
 	static const string cv_window_name;
 	AsyncLogger logger;
 	void _put_battery_on_frame(Mat *);
 public:
-	Controller(Tello* tello, bool debug) :
-		tello(tello),
+	Controller(Drone* drone, bool debug) :
+		drone(drone),
 		debug(debug),
 		face_detector(),
 		gesture_detector(),

@@ -19,12 +19,12 @@ using std::atomic;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 using namespace std::chrono_literals;
 
-const string Controller::cv_window_name = "Tello camera";
+const string Controller::cv_window_name = "Drone camera";
 
 void Controller::get_battery_stat() {
 	// modifies battery_stat
 	while (true) {
-		this->battery_stat = tello->get_battery();
+		this->battery_stat = drone->get_battery();
 		std::this_thread::sleep_for(milliseconds(WAIT_BATTERY));
 	}
 }
@@ -36,7 +36,7 @@ void Controller::run() {
 	std::thread battery_thread(&Controller::get_battery_stat, this);
 	battery_thread.detach();
 
-	cv::VideoCapture cap = tello->get_video_stream();
+	cv::VideoCapture cap = drone->get_video_stream();
 	cv::Mat frame;
 	cv::namedWindow(cv_window_name);
 
@@ -73,7 +73,7 @@ void Controller::run() {
 		if (key == 27 || key == 'q' ||
 			cv::getWindowProperty(cv_window_name, cv::WND_PROP_VISIBLE) < 1
 			) {
-			// TODO tello clean-up
+			// TODO clean-up
 			break;
 		}
 	}
@@ -81,7 +81,7 @@ void Controller::run() {
 }
 
 void Controller::detection_step(cv::Mat* img) {
-	// sets _last_face, _last_gesture, stop_tello, buffer
+	// sets _last_face, _last_gesture, stop_drone, buffer
 	// accesses face_detector, gesture_detector
 
 	Detection face_detection = this->face_detector.detectAndDisplay(*img);
@@ -97,32 +97,32 @@ void Controller::detection_step(cv::Mat* img) {
 		//cv::imshow("Fucked up", gesture_detection_area);
 		//return;
 		//logger->info(std::to_string(gesture_detection_area));
-		Detection gesture_detection = gesture_detector.detect(gesture_detection_area);
-		cv::Rect box_scaled(gesture_detection.box);
-		box_scaled.x += gesture_box.x;
-		box_scaled.y += gesture_box.y;
-		cv::rectangle(*img, box_scaled, color, 2);
+		// Detection gesture_detection = gesture_detector.detect(gesture_detection_area);
+		// cv::Rect box_scaled(gesture_detection.box);
+		// box_scaled.x += gesture_box.x;
+		// box_scaled.y += gesture_box.y;
+		// cv::rectangle(*img, box_scaled, color, 2);
 
-		if (gesture_detection.score > 0) {
-			_last_gesture = system_clock::now();
-			stop_tello = false;
-			cv::Mat gesture_region = gesture_detection_area(gesture_detection.box);
-			ClassifierOutput classified_gesture = gesture_detector.classify(gesture_region);
-			buffer.add(classified_gesture.classId);
-			gesture_detector.visualize(img, classified_gesture, gesture_box);
-		}
+		// if (gesture_detection.score > 0) {
+		// 	_last_gesture = system_clock::now();
+		// 	stop_drone = false;
+		// 	cv::Mat gesture_region = gesture_detection_area(gesture_detection.box);
+		// 	ClassifierOutput classified_gesture = gesture_detector.classify(gesture_region);
+		// 	buffer.add(classified_gesture.classId);
+		// 	gesture_detector.visualize(img, classified_gesture, gesture_box);
+		// }
 	}
 }
 
 void Controller::send_command() {
-	// accesses _last_face, _last_gesture, stop, buffer, is_landing, tello, vel, debug, stop_tello
+	// accesses _last_face, _last_gesture, stop, buffer, is_landing, drone, vel, debug, stop_drone
 	// sets vel, buffer
 
 	while (true) {
-		if (!this->stop_tello) {
+		if (!this->stop_drone) {
 			if ((system_clock::now() - this->_last_face) > FACE_TIMEOUT ||
 				(system_clock::now() - this->_last_gesture) > GESTURE_TIMEOUT) {
-				logger->info("No face or gesture: stopping Tello");
+				logger->info("No face or gesture: stopping drone");
 				this->stop();
 			}
 			else {
@@ -164,7 +164,7 @@ void Controller::send_command() {
 							vel.at(3) = 0;
 							break;
 						case Land:
-							tello->land();
+							drone->land();
 							this->is_landing = true;
 							break;
 						default:
@@ -175,7 +175,7 @@ void Controller::send_command() {
 					if (vel.at(3) != -1 && this->vel != vel) {
 						this->vel = vel;
 						if (!this->debug) {
-							tello->send_rc_control(vel);
+							drone->send_rc_control(vel);
 						}
 					}
 				}
@@ -186,10 +186,10 @@ void Controller::send_command() {
 }
 
 void Controller::stop() {
-	// modifies vel, stop_tello
+	// modifies vel, stop_drone
 	this->vel = { 0, 0, 0, 0 };
-	this->stop_tello = true;
-	tello->send_rc_control(this->vel);
+	this->stop_drone = true;
+	drone->send_rc_control(this->vel);
 }
 
 void Controller::_put_battery_on_frame(cv::Mat* img) {

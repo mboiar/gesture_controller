@@ -28,13 +28,13 @@ GestureDetector::GestureDetector(
 
     classifier_net = cv::dnn::readNet(classifier_model);
     //ssdlite = cv::dnn::DetectionModel::DetectionModel("data/ssdlite.onnx");
-    detector_net = cv::dnn::DetectionModel::DetectionModel("data/cross-hands.weights", "data/cross-hands.cfg");
-    detector_net1 = cv::dnn::readNet("data/cross-hands.weights", "data/cross-hands.cfg");
-    detector_net1.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
-    detector_net1.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
-    detector_dims = cv::Size(0, 0);
-    detector_dims.width = 256;
-    detector_dims.height = 256;
+    // detector_net = cv::dnn::DetectionModel::DetectionModel("data/cross-hands.weights", "data/cross-hands.cfg");
+    // detector_net1 = cv::dnn::readNet("data/cross-hands.weights", "data/cross-hands.cfg");
+    // detector_net1.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
+    // detector_net1.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
+    // detector_dims = cv::Size(0, 0);
+    // detector_dims.width = 256;
+    // detector_dims.height = 256;
 
 }
 
@@ -99,74 +99,6 @@ cv::Mat fast_resize(cv::Mat mat, const cv::Size& desired_size) {
     cv::resize(mat, dst, new_size, 0, 0, interpolation);
 
     return dst;
-}
-
-Detection GestureDetector::detect(const cv::Mat& original_img) {
- 
-    //vector<int> classIds;
-    //vector<float> confidences;
-    //vector<cv::Rect> boxes;
-
-    // MediaPipe
-
-
-
-    //cv::Size sz = cv::Size(256, 256);
-    //cv::Mat frame;
-    //chw_to_hwc(img, frame);
-    //Resize res = resize_and_pad(frame, sz);
-        //if (img.size[0] > 256 || img.size[1] > 256) {
-            //cv::resize(original_img, frame, sz);
-
-    //float conf_threshold, nms_threshold;
-    //std::sort(prediction_results.begin(), prediction_results.end(),
-    //    [](const PredictionResult& lhs, const PredictionResult& rhs)
-    //    {
-    //        return lhs.best_probability < rhs.best_probability;
-    //    });
-    //for (auto i : outs) {
-    //    std::cout << i << std::endl;
-    //}
-    //  [batchId, classId, confidence, left, top, right, bottom]
-    //for (size_t k = 0; k < outs.size(); k++)
-    //{
-    //    float* data = (float*)outs[k].data;
-    //    for (size_t i = 0; i < outs[k].total(); i += 7)
-    //    {
-    //        float confidence = data[i + 2];
-    //        int classId = (int)data[i + 1];
-    //        if (confidence > conf_threshold)
-    //        {
-    //            float left = data[i + 3] * img.cols;
-    //            float top = data[i + 4] * img.rows;
-    //            float right = data[i + 5] * img.cols;
-    //            float bottom = data[i + 6] * img.rows;
-
-    //            // Add 1 because cv::Rect() defines the boundary as left and top are inclusive,
-    //            //  and as right and bottom are exclusive?
-    //            float width = right - left + 1;
-    //            float height = bottom - top + 1;
-
-    //            classIds.push_back(classId - 1); // classID=0 is background, and we have to start
-    //            // the index from 1 as 0 to get a corresponding
-    //            // class name from the class list.
-    //            confidences.push_back(confidence);
-    //            boxes.push_back(cv::Rect(left, top, width, height));
-    //        }
-    //    }
-    //}
-    //std::vector<int> indices;
-    //// Non-Max Supression               
-    //cv::dnn::NMSBoxes(boxes, confidences, conf_threshold, nms_threshold, indices);
-
-    //return indices;
-    //cv::Rect box = boxes.at(0);
-    //double score = confidences.at(0);
-cv::Rect box = cv::Rect();
-double score = 0;
-    Detection detection = Detection(box, score);
-
-	return detection;
 }
 
 ClassifierOutput GestureDetector::classify(const cv::Mat &img) {

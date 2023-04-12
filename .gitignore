@@ -12,3 +12,4 @@ CMakeFiles
 *.cmake
 CMakeCache.txt
 bin
+build

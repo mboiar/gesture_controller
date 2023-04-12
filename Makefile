@@ -117,24 +117,120 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named main
+# Target rules for targets named drone_gesture_controller
 
 # Build rule for target.
-main: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main
-.PHONY : main
+drone_gesture_controller: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 drone_gesture_controller
+.PHONY : drone_gesture_controller
 
 # fast build rule for target.
-main/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
-.PHONY : main/fast
+drone_gesture_controller/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/build
+.PHONY : drone_gesture_controller/fast
+
+src/controller.o: src/controller.cpp.o
+.PHONY : src/controller.o
+
+# target to build an object file
+src/controller.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/controller.cpp.o
+.PHONY : src/controller.cpp.o
+
+src/controller.i: src/controller.cpp.i
+.PHONY : src/controller.i
+
+# target to preprocess a source file
+src/controller.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/controller.cpp.i
+.PHONY : src/controller.cpp.i
+
+src/controller.s: src/controller.cpp.s
+.PHONY : src/controller.s
+
+# target to generate assembly for a file
+src/controller.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/controller.cpp.s
+.PHONY : src/controller.cpp.s
+
+src/drone.o: src/drone.cpp.o
+.PHONY : src/drone.o
+
+# target to build an object file
+src/drone.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/drone.cpp.o
+.PHONY : src/drone.cpp.o
+
+src/drone.i: src/drone.cpp.i
+.PHONY : src/drone.i
+
+# target to preprocess a source file
+src/drone.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/drone.cpp.i
+.PHONY : src/drone.cpp.i
+
+src/drone.s: src/drone.cpp.s
+.PHONY : src/drone.s
+
+# target to generate assembly for a file
+src/drone.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/drone.cpp.s
+.PHONY : src/drone.cpp.s
+
+src/face_detection.o: src/face_detection.cpp.o
+.PHONY : src/face_detection.o
+
+# target to build an object file
+src/face_detection.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/face_detection.cpp.o
+.PHONY : src/face_detection.cpp.o
+
+src/face_detection.i: src/face_detection.cpp.i
+.PHONY : src/face_detection.i
+
+# target to preprocess a source file
+src/face_detection.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/face_detection.cpp.i
+.PHONY : src/face_detection.cpp.i
+
+src/face_detection.s: src/face_detection.cpp.s
+.PHONY : src/face_detection.s
+
+# target to generate assembly for a file
+src/face_detection.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/face_detection.cpp.s
+.PHONY : src/face_detection.cpp.s
+
+src/gesture_detection.o: src/gesture_detection.cpp.o
+.PHONY : src/gesture_detection.o
+
+# target to build an object file
+src/gesture_detection.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/gesture_detection.cpp.o
+.PHONY : src/gesture_detection.cpp.o
+
+src/gesture_detection.i: src/gesture_detection.cpp.i
+.PHONY : src/gesture_detection.i
+
+# target to preprocess a source file
+src/gesture_detection.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/gesture_detection.cpp.i
+.PHONY : src/gesture_detection.cpp.i
+
+src/gesture_detection.s: src/gesture_detection.cpp.s
+.PHONY : src/gesture_detection.s
+
+# target to generate assembly for a file
+src/gesture_detection.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/gesture_detection.cpp.s
+.PHONY : src/gesture_detection.cpp.s
 
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
 # target to build an object file
 src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/main.cpp.o
 .PHONY : src/main.cpp.o
 
 src/main.i: src/main.cpp.i
@@ -142,7 +238,7 @@ src/main.i: src/main.cpp.i
 
 # target to preprocess a source file
 src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/main.cpp.i
 .PHONY : src/main.cpp.i
 
 src/main.s: src/main.cpp.s
@@ -150,7 +246,7 @@ src/main.s: src/main.cpp.s
 
 # target to generate assembly for a file
 src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
 # Help Target
@@ -161,7 +257,19 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... main"
+	@echo "... drone_gesture_controller"
+	@echo "... src/controller.o"
+	@echo "... src/controller.i"
+	@echo "... src/controller.s"
+	@echo "... src/drone.o"
+	@echo "... src/drone.i"
+	@echo "... src/drone.s"
+	@echo "... src/face_detection.o"
+	@echo "... src/face_detection.i"
+	@echo "... src/face_detection.s"
+	@echo "... src/gesture_detection.o"
+	@echo "... src/gesture_detection.i"
+	@echo "... src/gesture_detection.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
