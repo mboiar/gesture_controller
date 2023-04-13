@@ -110,9 +110,12 @@ ClassifierOutput GestureDetector::classify(const cv::Mat &img) {
     double scale = 1;
     int inpWidth = 224;
     int inpHeight = 224;
-
-    cv::resize(img, img, cv::Size(rszWidth, rszHeight));
+    // logger->info("Bur-bur");
+    // cv::resize(img, img, cv::Size(rszWidth, rszHeight));
+    // logger->info("Bur-bur-bur");
     cv::Mat blob = cv::dnn::blobFromImage(img, scale, cv::Size(inpWidth, inpHeight), mean, true, true);
+    // logger->info("Bur-bur-bur-bur");
+
     cv::divide(blob, std, blob);
 
     classifier_net.setInput(blob);
@@ -120,18 +123,23 @@ ClassifierOutput GestureDetector::classify(const cv::Mat &img) {
     std::vector<cv::Mat> outs;
     classifier_net.forward(outs, outNames);
     for (auto i : outs) {
-        std::cout << i << std::endl;
+        std::cout << "Outs" << i << std::endl << std::endl;
     }
+    // logger->info("{}", outs.size());
+    logger->debug("Output layers: {}", fmt::join(outNames, ", "));
     //cv::Mat prob = classifier_net.forward();
     //std::cout << prob << std::endl;
-    //cv::Point classIdPoint;
-    //double confidence;
-    //cv::minMaxLoc(prob.reshape(1, 1), 0, &confidence, 0, &classIdPoint);
-    //Gesture classId = static_cast<Gesture>(classIdPoint.x);
+    cv::Point classIdPoint;
+    double confidence;
+    cv::minMaxLoc(outs.at(0).reshape(1, 1), 0, &confidence, 0, &classIdPoint);
+    logger->info("{} ({} {})", confidence, classIdPoint.x, classIdPoint.y);
+    Gesture classId = static_cast<Gesture>(classIdPoint.x);
+    ClassifierOutput classified_gesture = ClassifierOutput(confidence, classId);
+    cv::minMaxLoc(outs.at(1).reshape(1, 1), 0, &confidence, 0, &classIdPoint);
+    logger->info("{} ({} {})", confidence, classIdPoint.x, classIdPoint.y);
 
-    //ClassifierOutput classified_gesture = ClassifierOutput(confidence, classId);
-    //logger->debug("Gesture {}: {:03.1f}%", classified_gesture.classId, classified_gesture.score*100);
-    ClassifierOutput classified_gesture = ClassifierOutput();
+    logger->info("Gesture {}: {:03.1f}%", classified_gesture.classId, classified_gesture.score*100);
+    // ClassifierOutput classified_gesture = ClassifierOutput();
     return classified_gesture;
 }
 
