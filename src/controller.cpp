@@ -45,6 +45,7 @@ void Controller::run() {
 	TimePoint end_time;
 	double fps = 0;
 	logger->info("Starting detection");
+	logger->info("WELL?");
 
 	while (true) {
 		cap >> frame;
@@ -69,10 +70,10 @@ void Controller::run() {
 		
 		cv::imshow(cv_window_name, frame);
 
-		char key = (char)cv::waitKey(10);
-		if (key == 27 || key == 'q' ||
-			cv::getWindowProperty(cv_window_name, cv::WND_PROP_VISIBLE) < 1
-			) {
+		// double is_window_visible = cv::getWindowProperty(cv_window_name, cv::WND_PROP_ASPECT_RATIO);
+		char key = (char)cv::waitKey(25);
+		// logger->info("Is window visible? {} {}", is_window_visible >= 0, (int)key);
+		if (key == 27 || key == 'q' || (int)key == -29) {
 			// TODO clean-up
 			break;
 		}
@@ -94,23 +95,23 @@ void Controller::detection_step(cv::Mat* img) {
 		cv::rectangle(*img, gesture_box, color, 2);
 
 		cv::Mat gesture_detection_area = (*img)(gesture_box);
-		//cv::imshow("Fucked up", gesture_detection_area);
+		cv::imshow("Gesture detection area", gesture_detection_area);
 		//return;
-		//logger->info(std::to_string(gesture_detection_area));
-		// Detection gesture_detection = gesture_detector.detect(gesture_detection_area);
+		// logger->info("{}", gesture_detection_area);
+		ClassifierOutput classified_gesture = gesture_detector.classify(gesture_detection_area);
 		// cv::Rect box_scaled(gesture_detection.box);
 		// box_scaled.x += gesture_box.x;
 		// box_scaled.y += gesture_box.y;
 		// cv::rectangle(*img, box_scaled, color, 2);
 
-		// if (gesture_detection.score > 0) {
-		// 	_last_gesture = system_clock::now();
-		// 	stop_drone = false;
-		// 	cv::Mat gesture_region = gesture_detection_area(gesture_detection.box);
-		// 	ClassifierOutput classified_gesture = gesture_detector.classify(gesture_region);
-		// 	buffer.add(classified_gesture.classId);
-		// 	gesture_detector.visualize(img, classified_gesture, gesture_box);
-		// }
+		if (classified_gesture.score > 0) {
+			_last_gesture = system_clock::now();
+			stop_drone = false;
+			// cv::Mat gesture_region = gesture_detection_area(classified_gesture.box);
+			//ClassifierOutput classified_gesture = gesture_detector.classify(gesture_region);
+			buffer.add(classified_gesture.classId);
+			gesture_detector.visualize(img, classified_gesture, gesture_box);
+		}
 	}
 }
 
