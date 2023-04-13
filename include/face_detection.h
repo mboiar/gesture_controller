@@ -3,8 +3,6 @@
 
 #include "detection.h"
 
-
-
 using std::string;
 using std::vector;
 using std::ostream;

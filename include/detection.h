@@ -3,8 +3,9 @@
 
 #include <iostream>
 #include<vector>
+#include<string>
 
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 

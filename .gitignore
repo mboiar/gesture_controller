@@ -4,3 +4,12 @@
 *.vcxproj*
 x64/
 .vs/
+
+data
+*.ipynb
+.editorconfig
+CMakeFiles
+*.cmake
+CMakeCache.txt
+bin
+build

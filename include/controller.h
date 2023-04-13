@@ -1,13 +1,19 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include <iostream>
 #include <vector>
 #include <string>
 #include <chrono>
 #include <atomic>
 
+#include <opencv2/opencv.hpp>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+
 #include "face_detection.h"
 #include "gesture_detection.h"
+#include "drone.h"
 
 using std::string;
 using std::vector;
@@ -18,38 +24,18 @@ using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 using AsyncLogger = std::shared_ptr<spdlog::logger>;
 
 
-class Tello {
-	AsyncLogger logger;
-	static const char TELLO_STREAM_URL[];
-	bool simulate;
-
-public:
-	int get_battery();
-	void send_rc_control(const vector<int>& vel);
-	void land();
-	cv::VideoCapture get_video_stream();
-	Tello(bool sim = true) : simulate(sim) {
-		string name("TELLO");
-		logger = spdlog::get(name);
-		if (!logger) {
-			logger = spdlog::stdout_color_mt(name);
-		}
-		logger->set_level(spdlog::level::info);
-	}
-};
-
-template <class T>
 class Buffer {
 	// TODO thread-safe buffer
 	vector<int> _buffer;
-	int max_len, size;
+	int max_len;
+	size_t size, default_val;
 public:
 	unsigned int buffer_len;
-	Buffer(unsigned int bl, unsigned int size) : max_len(bl), size(size) {
+	Buffer(unsigned int bl, size_t size, size_t defalut_val = 0) : max_len(bl), size(size), default_val(default_val) {
 		_buffer = vector<int>(size);
 	}
-	void add(const T &elem);
-	T get();
+	void add(size_t elem);
+	size_t get();
 };
 
 class Controller {
@@ -59,23 +45,23 @@ class Controller {
 	constexpr static long WAIT_BATTERY = 4000;
 	constexpr static milliseconds FACE_TIMEOUT = milliseconds(1000);
 	constexpr static milliseconds GESTURE_TIMEOUT = milliseconds(1000);
-	Tello *tello;
+	Drone *drone;
 	bool debug;
-	Buffer<Gesture> buffer;
+	Buffer buffer;
 	FaceDetector face_detector;
 	GestureDetector gesture_detector;
 	atomic<int> battery_stat = -1;
 	TimePoint _last_gesture = TimePoint();
 	TimePoint _last_face = TimePoint();
-	bool stop_tello = false;
+	bool stop_drone = false;
 	bool is_landing = false;
 	vector<int> vel = { 0 };
 	static const string cv_window_name;
 	AsyncLogger logger;
 	void _put_battery_on_frame(Mat *);
 public:
-	Controller(Tello* tello, bool debug) :
-		tello(tello),
+	Controller(Drone* drone, bool debug) :
+		drone(drone),
 		debug(debug),
 		face_detector(),
 		gesture_detector(),
