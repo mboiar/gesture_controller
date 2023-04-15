@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /home/mboiar/copter-gesture-control
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
@@ -84,6 +94,51 @@ rebuild_cache:
 # Special rule for the target rebuild_cache
 rebuild_cache/fast: rebuild_cache
 .PHONY : rebuild_cache/fast
+
+# Special rule for the target list_install_components
+list_install_components:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Available install components are: \"Unspecified\""
+.PHONY : list_install_components
+
+# Special rule for the target list_install_components
+list_install_components/fast: list_install_components
+.PHONY : list_install_components/fast
+
+# Special rule for the target install
+install: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install
+
+# Special rule for the target install
+install/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install/fast
+
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local/fast
+
+# Special rule for the target install/strip
+install/strip: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip
+
+# Special rule for the target install/strip
+install/strip/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -129,12 +184,78 @@ drone_gesture_controller/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/build
 .PHONY : drone_gesture_controller/fast
 
+#=============================================================================
+# Target rules for targets named copter_gesture_controller__test
+
+# Build rule for target.
+copter_gesture_controller__test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 copter_gesture_controller__test
+.PHONY : copter_gesture_controller__test
+
+# fast build rule for target.
+copter_gesture_controller__test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/build
+.PHONY : copter_gesture_controller__test/fast
+
+#=============================================================================
+# Target rules for targets named gmock
+
+# Build rule for target.
+gmock: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gmock
+.PHONY : gmock
+
+# fast build rule for target.
+gmock/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build
+.PHONY : gmock/fast
+
+#=============================================================================
+# Target rules for targets named gmock_main
+
+# Build rule for target.
+gmock_main: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gmock_main
+.PHONY : gmock_main
+
+# fast build rule for target.
+gmock_main/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build
+.PHONY : gmock_main/fast
+
+#=============================================================================
+# Target rules for targets named gtest
+
+# Build rule for target.
+gtest: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest
+.PHONY : gtest
+
+# fast build rule for target.
+gtest/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build
+.PHONY : gtest/fast
+
+#=============================================================================
+# Target rules for targets named gtest_main
+
+# Build rule for target.
+gtest_main: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest_main
+.PHONY : gtest_main
+
+# fast build rule for target.
+gtest_main/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build
+.PHONY : gtest_main/fast
+
 src/controller.o: src/controller.cpp.o
 .PHONY : src/controller.o
 
 # target to build an object file
 src/controller.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/controller.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/controller.cpp.o
 .PHONY : src/controller.cpp.o
 
 src/controller.i: src/controller.cpp.i
@@ -143,6 +264,7 @@ src/controller.i: src/controller.cpp.i
 # target to preprocess a source file
 src/controller.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/controller.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/controller.cpp.i
 .PHONY : src/controller.cpp.i
 
 src/controller.s: src/controller.cpp.s
@@ -151,6 +273,7 @@ src/controller.s: src/controller.cpp.s
 # target to generate assembly for a file
 src/controller.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/controller.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/controller.cpp.s
 .PHONY : src/controller.cpp.s
 
 src/drone.o: src/drone.cpp.o
@@ -159,6 +282,7 @@ src/drone.o: src/drone.cpp.o
 # target to build an object file
 src/drone.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/drone.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/drone.cpp.o
 .PHONY : src/drone.cpp.o
 
 src/drone.i: src/drone.cpp.i
@@ -167,6 +291,7 @@ src/drone.i: src/drone.cpp.i
 # target to preprocess a source file
 src/drone.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/drone.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/drone.cpp.i
 .PHONY : src/drone.cpp.i
 
 src/drone.s: src/drone.cpp.s
@@ -175,6 +300,7 @@ src/drone.s: src/drone.cpp.s
 # target to generate assembly for a file
 src/drone.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/drone.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/drone.cpp.s
 .PHONY : src/drone.cpp.s
 
 src/face_detection.o: src/face_detection.cpp.o
@@ -183,6 +309,7 @@ src/face_detection.o: src/face_detection.cpp.o
 # target to build an object file
 src/face_detection.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/face_detection.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/face_detection.cpp.o
 .PHONY : src/face_detection.cpp.o
 
 src/face_detection.i: src/face_detection.cpp.i
@@ -191,6 +318,7 @@ src/face_detection.i: src/face_detection.cpp.i
 # target to preprocess a source file
 src/face_detection.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/face_detection.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/face_detection.cpp.i
 .PHONY : src/face_detection.cpp.i
 
 src/face_detection.s: src/face_detection.cpp.s
@@ -199,6 +327,7 @@ src/face_detection.s: src/face_detection.cpp.s
 # target to generate assembly for a file
 src/face_detection.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/face_detection.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/face_detection.cpp.s
 .PHONY : src/face_detection.cpp.s
 
 src/gesture_detection.o: src/gesture_detection.cpp.o
@@ -207,6 +336,7 @@ src/gesture_detection.o: src/gesture_detection.cpp.o
 # target to build an object file
 src/gesture_detection.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/gesture_detection.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/gesture_detection.cpp.o
 .PHONY : src/gesture_detection.cpp.o
 
 src/gesture_detection.i: src/gesture_detection.cpp.i
@@ -215,6 +345,7 @@ src/gesture_detection.i: src/gesture_detection.cpp.i
 # target to preprocess a source file
 src/gesture_detection.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/gesture_detection.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/gesture_detection.cpp.i
 .PHONY : src/gesture_detection.cpp.i
 
 src/gesture_detection.s: src/gesture_detection.cpp.s
@@ -223,6 +354,7 @@ src/gesture_detection.s: src/gesture_detection.cpp.s
 # target to generate assembly for a file
 src/gesture_detection.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/gesture_detection.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/src/gesture_detection.cpp.s
 .PHONY : src/gesture_detection.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -249,6 +381,78 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/drone_gesture_controller.dir/build.make CMakeFiles/drone_gesture_controller.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+test/main_gtest.o: test/main_gtest.cpp.o
+.PHONY : test/main_gtest.o
+
+# target to build an object file
+test/main_gtest.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/main_gtest.cpp.o
+.PHONY : test/main_gtest.cpp.o
+
+test/main_gtest.i: test/main_gtest.cpp.i
+.PHONY : test/main_gtest.i
+
+# target to preprocess a source file
+test/main_gtest.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/main_gtest.cpp.i
+.PHONY : test/main_gtest.cpp.i
+
+test/main_gtest.s: test/main_gtest.cpp.s
+.PHONY : test/main_gtest.s
+
+# target to generate assembly for a file
+test/main_gtest.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/main_gtest.cpp.s
+.PHONY : test/main_gtest.cpp.s
+
+test/test_face_detection.o: test/test_face_detection.cpp.o
+.PHONY : test/test_face_detection.o
+
+# target to build an object file
+test/test_face_detection.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/test_face_detection.cpp.o
+.PHONY : test/test_face_detection.cpp.o
+
+test/test_face_detection.i: test/test_face_detection.cpp.i
+.PHONY : test/test_face_detection.i
+
+# target to preprocess a source file
+test/test_face_detection.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/test_face_detection.cpp.i
+.PHONY : test/test_face_detection.cpp.i
+
+test/test_face_detection.s: test/test_face_detection.cpp.s
+.PHONY : test/test_face_detection.s
+
+# target to generate assembly for a file
+test/test_face_detection.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/test_face_detection.cpp.s
+.PHONY : test/test_face_detection.cpp.s
+
+test/test_gesture_detection.o: test/test_gesture_detection.cpp.o
+.PHONY : test/test_gesture_detection.o
+
+# target to build an object file
+test/test_gesture_detection.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/test_gesture_detection.cpp.o
+.PHONY : test/test_gesture_detection.cpp.o
+
+test/test_gesture_detection.i: test/test_gesture_detection.cpp.i
+.PHONY : test/test_gesture_detection.i
+
+# target to preprocess a source file
+test/test_gesture_detection.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/test_gesture_detection.cpp.i
+.PHONY : test/test_gesture_detection.cpp.i
+
+test/test_gesture_detection.s: test/test_gesture_detection.cpp.s
+.PHONY : test/test_gesture_detection.s
+
+# target to generate assembly for a file
+test/test_gesture_detection.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/copter_gesture_controller__test.dir/build.make CMakeFiles/copter_gesture_controller__test.dir/test/test_gesture_detection.cpp.s
+.PHONY : test/test_gesture_detection.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -256,8 +460,18 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... install"
+	@echo "... install/local"
+	@echo "... install/strip"
+	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... test"
+	@echo "... copter_gesture_controller__test"
 	@echo "... drone_gesture_controller"
+	@echo "... gmock"
+	@echo "... gmock_main"
+	@echo "... gtest"
+	@echo "... gtest_main"
 	@echo "... src/controller.o"
 	@echo "... src/controller.i"
 	@echo "... src/controller.s"
@@ -273,6 +487,15 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... test/main_gtest.o"
+	@echo "... test/main_gtest.i"
+	@echo "... test/main_gtest.s"
+	@echo "... test/test_face_detection.o"
+	@echo "... test/test_face_detection.i"
+	@echo "... test/test_face_detection.s"
+	@echo "... test/test_gesture_detection.o"
+	@echo "... test/test_gesture_detection.i"
+	@echo "... test/test_gesture_detection.s"
 .PHONY : help
 
 

@@ -13,3 +13,12 @@ CMakeFiles
 CMakeCache.txt
 bin
 build
+
+googletest
+libgmock*
+libgtest*
+_deps
+
+.vscode
+
+!test/data

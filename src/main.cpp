@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
      drone.streamon();
 
      Controller controller = Controller(&drone, false);
-     controller.run();
+     controller.run(100);
 
     return 0;
 }

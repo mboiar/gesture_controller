@@ -74,7 +74,7 @@ public:
 		logger->set_level(spdlog::level::info);
 	};
 
-	void run();
+	void run(int frame_refresh_rate = 25);
 	void detection_step(Mat*);
 	void send_command();
 	void get_battery_stat();
