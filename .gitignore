@@ -22,3 +22,5 @@ _deps
 .vscode
 
 !test/data
+
+Makefile
