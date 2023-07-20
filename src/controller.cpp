@@ -29,7 +29,7 @@ void Controller::get_battery_stat() {
 	}
 }
 
-void Controller::run() {
+void Controller::run(int frame_refresh_rate) {
 	// log
 	std::thread control_thread(&Controller::send_command, this);
 	control_thread.detach();
@@ -71,7 +71,7 @@ void Controller::run() {
 		cv::imshow(cv_window_name, frame);
 
 		// double is_window_visible = cv::getWindowProperty(cv_window_name, cv::WND_PROP_ASPECT_RATIO);
-		char key = (char)cv::waitKey(25);
+		char key = (char)cv::waitKey(frame_refresh_rate);
 		// logger->info("Is window visible? {} {}", is_window_visible >= 0, (int)key);
 		if (key == 27 || key == 'q' || (int)key == -29) {
 			// TODO clean-up

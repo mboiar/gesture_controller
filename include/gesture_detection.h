@@ -38,19 +38,16 @@ class GestureDetector {
 	double scale = 1.0;
 	AsyncLogger logger;
 	cv::dnn::Net classifier_net;
-	cv::dnn::DetectionModel detector_net;
-	cv::dnn::Net detector_net1;
-	cv::Size detector_dims;
-	cv::dnn::DetectionModel ssdlite;
-	//DarkHelp::NN nn;
 public:
 	GestureDetector(
-		//const string& detector_model = "data/ssdlite.onnx",
-		const string& classifier_model = "data/resnet18.onnx"
+		const string& classifier_model = "pretrained_models/resnet18.onnx"
 	);
-	Detection detect(const cv::Mat&);
 	void visualize(cv::Mat*, const ClassifierOutput&, const cv::Rect&);
 	ClassifierOutput classify(const cv::Mat&);
 };
+
+void resize_and_pad(cv::Mat& src, cv::Mat& dst, cv::Size new_shape, int pad_color = 0);
+
+void softmax(cv::InputArray inblob, cv::OutputArray outblob);
 
 #endif

@@ -1,18 +1,32 @@
-cmake_minimum_required(VERSION 3.0) 
-PROJECT (drone-gesture-controller)
-# set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+cmake_minimum_required(VERSION 3.0)
+
+set(PROJECT_ID gesture_controller)
+PROJECT (${PROJECT_ID})
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+
+# add_compile_options(-Wall -Wextra -Werror -Wpedantic -pedantic-errors -Wconversion)
+
+set(USE_ASAN true)
+if ((DEFINED USE_ASAN) AND (USE_ASAN STREQUAL "true"))
+    message(STATUS "Using AddressSanitizer (ASan).")
+    if (UNIX)
+        # message(STATUS "ASAN_OPTIONS = $ENV{ASAN_OPTIONS}")
+        # set(ENV{ASAN_OPTIONS} allocator_may_return_null=1)
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+    endif(UNIX)
+endif()
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+)
+FetchContent_MakeAvailable(googletest)
 find_package(OpenCV REQUIRED)
 find_package(spdlog REQUIRED)
-
-# add_library(
-#     Controller
-#     src/controller.cpp
-#     src/drone.cpp
-#     src/face_detection.cpp
-#     src/gesture_detection.cpp
-# )
-# target_include_directories(ControllerLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set( MAIN_SRC
     src/main.cpp
@@ -21,9 +35,31 @@ set( MAIN_SRC
     src/face_detection.cpp
     src/gesture_detection.cpp
 )
-add_executable( drone_gesture_controller ${MAIN_SRC} )
-# target_link_libraries( drone_gesture_controller LINK_PUBLIC ControllerLib)
-target_link_libraries(drone_gesture_controller PUBLIC ${OpenCV_LIBS} spdlog::spdlog)
+add_executable( gesture_controller ${MAIN_SRC} )
+target_link_libraries(gesture_controller PUBLIC ${OpenCV_LIBS} spdlog::spdlog)
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS})
 link_directories( ${CMAKE_BINARY_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+
+
+enable_testing()
+
+set(SOURCES_FILES_TESTS
+    test/test_gesture_detection.cpp
+    test/test_face_detection.cpp
+    )
+set( TEST_SRC
+    src/controller.cpp
+    src/drone.cpp
+    src/face_detection.cpp
+    src/gesture_detection.cpp
+)
+set(EXEC_TEST ${PROJECT_ID}__test)
+add_executable(${EXEC_TEST} ${TEST_SRC} ${SOURCES_FILES_TESTS} test/main_gtest.cpp)
+target_link_libraries(${EXEC_TEST} GTest::gtest_main ${OpenCV_LIBS} spdlog::spdlog)
+include(GoogleTest)
+# target_include_directories(${EXEC_TEST} PUBLIC
+#             ${GTEST_ROOT}/googlemock/include
+#             ${GTEST_ROOT}/googletest/include
+#             )
+gtest_discover_tests(${EXEC_TEST})

@@ -15,8 +15,7 @@ FaceDetector::FaceDetector() {
     logger->set_level(spdlog::level::info);
 
     classifier = cv::CascadeClassifier();
-    //string classifier_path("data/cascade/lbpcascade_frontalface_improved.xml");
-    string classifier_path("data/cascade/haarcascade_frontalface_default.xml");
+    string classifier_path("pretrained_models/haarcascade_frontalface_default.xml");
     string classifier_name = cv::samples::findFileOrKeep(classifier_path);
     logger->info("Load face cascade classifier");
     if (!classifier.load(classifier_name)) {
