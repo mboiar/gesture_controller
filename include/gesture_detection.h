@@ -48,4 +48,6 @@ public:
 
 void resize_and_pad(cv::Mat& src, cv::Mat& dst, cv::Size new_shape, int pad_color = 0);
 
+void softmax(cv::InputArray inblob, cv::OutputArray outblob);
+
 #endif

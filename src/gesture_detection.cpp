@@ -28,6 +28,17 @@ GestureDetector::GestureDetector(
     classifier_net = cv::dnn::readNet(classifier_model);
 }
 
+void softmax(cv::InputArray inblob, cv::OutputArray outblob)
+    {
+        const cv::Mat input = inblob.getMat();
+        outblob.create(inblob.size(), inblob.type());
+
+        cv::Mat exp;
+        const float max = *std::max_element(input.begin<float>(), input.end<float>());
+        cv::exp((input - max), exp);
+        outblob.getMat() = exp / cv::sum(exp)[0];
+	}
+
 void resize_and_pad(cv::Mat& src, cv::Mat& dst, cv::Size new_shape, int pad_color) {
     /**
      * Resize an OpenCV image up or down keeping the aspect ratio of the original image constant and padding with specified
@@ -71,44 +82,39 @@ void resize_and_pad(cv::Mat& src, cv::Mat& dst, cv::Size new_shape, int pad_colo
 }
 
 ClassifierOutput GestureDetector::classify(const cv::Mat &img) {
-   // preprocess frame
-    int rszWidth = 256;
-    int rszHeight = 256;
-    cv::Scalar std = { 0.229, 0.224, 0.225 };
-    cv::Scalar mean = { 123.675, 116.28, 103.53 }; //[0.485, 0.456, 0.406]*255
+   // rescale frame to [0, 1] than resize and pad to [224, 224, 3]
     double scale = 1.0 / 255.0;
     int inpWidth = 224;
     int inpHeight = 224;
     // logger->info("Bur-bur");
     cv::Mat resized_img = img;
     resize_and_pad(resized_img, resized_img, cv::Size(inpWidth, inpHeight));
-    cv::imwrite("test.png", resized_img);
+    // cv::imwrite("test.png", resized_img);
     // logger->info("Bur-bur-bur");
-    cv::Mat blob = cv::dnn::blobFromImage(resized_img, scale, cv::Size(inpWidth, inpHeight), mean, true, true);
+    cv::Mat blob = cv::dnn::blobFromImage(resized_img, scale, cv::Size(inpWidth, inpHeight), 0, true, false);
     // logger->info("Bur-bur-bur-bur");
-
-    cv::divide(blob, std, blob);
 
     classifier_net.setInput(blob);
     std::vector<std::string> outNames = classifier_net.getUnconnectedOutLayersNames();
     std::vector<cv::Mat> outs;
     classifier_net.forward(outs, outNames);
     for (auto i : outs) {
+        softmax(i, i);
         std::cout << "Outs" << i << std::endl << std::endl;
     }
     cv::Point classIdPoint_leading_hand;
     double confidence_leading_hand;
     cv::Point classIdPoint_gesture;
     double confidence_gesture;
-    cv::minMaxLoc(outs.at(0).reshape(1, 1), 0, &confidence_gesture, 0, &classIdPoint_gesture);
-    logger->info("Leading hand: {} conf: {:.2f}", classIdPoint_gesture.x, confidence_gesture);
+    cv::minMaxLoc(outs.at(1).reshape(1, 1), 0, &confidence_gesture, 0, &classIdPoint_gesture);
+    logger->info("Gesture class: {} conf: {:.2f}", classIdPoint_gesture.x, confidence_gesture);
     // Gesture classId = static_cast<Gesture>(classIdPoint_gesture.x);
     // ClassifierOutput classified_gesture = ClassifierOutput(confidence, classId);
-    cv::minMaxLoc(outs.at(1).reshape(1, 1), 0, &confidence_leading_hand, 0, &classIdPoint_leading_hand);
-    logger->info("Gesture class: {} conf: {:.2f}", classIdPoint_leading_hand.x, confidence_leading_hand);
+    cv::minMaxLoc(outs.at(0).reshape(1, 1), 0, &confidence_leading_hand, 0, &classIdPoint_leading_hand);
+    logger->info("Leading hand: {} conf: {:.2f}", classIdPoint_leading_hand.x, confidence_leading_hand);
 
     // logger->info("Gesture {}: {:.2f}%", classified_gesture.classId, classified_gesture.score);
-    ClassifierOutput classified_gesture = ClassifierOutput();
+    ClassifierOutput classified_gesture = ClassifierOutput(confidence_gesture, classIdPoint_gesture.x);
     return classified_gesture;
 }
 
