@@ -25,6 +25,8 @@ jobs:
       with:
         opencv-version: '4.7.0'
         CMAKE_BUILD_TYPE: DEBUG
+        opencv-extra-modules: true
+        install-deps: false
         
     - name: Setup spdlog
       run: |
