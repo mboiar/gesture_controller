@@ -35,7 +35,7 @@ jobs:
         opencv-version: '4.7.0'
         CMAKE_BUILD_TYPE: DEBUG
         opencv-extra-modules: true
-        # install-deps: false
+        install-deps: false
         # CMAKE_INSTALL_PREFIX: /usr/local/debug
 
     - name: Configure CMake
