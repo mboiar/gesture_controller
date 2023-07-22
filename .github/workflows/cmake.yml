@@ -34,14 +34,12 @@ jobs:
         key: ${{ runner.os }}-opencv-cache
 
     - if: ${{ steps.opencv-cache.output.cache-hit != 'true' }}
-      name: Build and install OpenCV
-      uses: Dovyski/setup-opencv-action@v1.1
-      with:
-        opencv-version: '4.7.0'
-        CMAKE_BUILD_TYPE: DEBUG
-        opencv-extra-modules: true
-        install-deps: false
-        # CMAKE_INSTALL_PREFIX: /usr/local/debug
+      name: Build OpenCV
+      run: |
+        git clone https://github.com/opencv.git --depth 1
+        git clone https://github.com/opencv_contrib.git --depth 1
+        cmake -S opencv -B opencv/build -D OPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules -D WITH_OPENMP=on -D WITH_TBB=on -D WITH_IPP=on -D CMAKE_BUILD_TYPE=DEBUG -D WITH_CSTRIPES=on -D WITH_OPENGL=on -D BUILD_EXAMPLES=OFF -D BUILD_TESTS=OFF -D BUILD_DOCS=OFF -D BUILD_PERF_TESTS=OFF -D BUILD_OPENCV_PYTHON3=OFF -D WITH_FFMPEG=ON -D WITH_QT=OFF -D WITH_GTK=ON
+        make -j10 -C opencv/build
 
     - if: ${{ steps.opencv-cache.output.cache-hit == 'true' }}
       name: Install OpenCV
