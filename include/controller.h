@@ -31,7 +31,7 @@ class Buffer {
 	size_t size, default_val;
 public:
 	unsigned int buffer_len;
-	Buffer(unsigned int bl, size_t size, size_t defalut_val = 0) : max_len(bl), size(size), default_val(default_val) {
+	Buffer(unsigned int bl_, size_t size_, size_t default_val_ = 0) : max_len(bl_), size(size_), default_val(default_val_) {
 		_buffer = vector<int>(size);
 	}
 	void add(size_t elem);
@@ -47,9 +47,9 @@ class Controller {
 	constexpr static milliseconds GESTURE_TIMEOUT = milliseconds(1000);
 	Drone *drone;
 	bool debug;
-	Buffer buffer;
 	FaceDetector face_detector;
 	GestureDetector gesture_detector;
+	Buffer buffer;
 	atomic<int> battery_stat = -1;
 	TimePoint _last_gesture = TimePoint();
 	TimePoint _last_face = TimePoint();

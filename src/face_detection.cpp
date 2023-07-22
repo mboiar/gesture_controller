@@ -6,7 +6,7 @@ using cv::dnn::Net;
 using std::chrono::system_clock;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
-FaceDetector::FaceDetector() {
+FaceDetector::FaceDetector(const std::string& detector_path) {
     string name("DETECTION");
     logger = spdlog::get(name);
     if (!logger) {
@@ -15,7 +15,7 @@ FaceDetector::FaceDetector() {
     logger->set_level(spdlog::level::info);
 
     classifier = cv::CascadeClassifier();
-    string classifier_path("pretrained_models/haarcascade_frontalface_default.xml");
+    string classifier_path(detector_path);
     string classifier_name = cv::samples::findFileOrKeep(classifier_path);
     logger->info("Load face cascade classifier");
     if (!classifier.load(classifier_name)) {

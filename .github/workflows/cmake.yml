@@ -7,43 +7,64 @@ on:
     branches: [ "main" ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Debug
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup OpenCV
-      uses: Dovyski/setup-opencv-action@v1.1
+    - run : sudo apt install ninja-build
+
+    - name: Cache OpenCV
+      id: opencv-cache
+      uses: actions/cache@v3
       with:
-        opencv-version: '4.7.0'
-        CMAKE_BUILD_TYPE: DEBUG
-        
-    - name: Setup spdlog
+        path: |
+          ./opencv
+          ./opencv_contrib
+        key: ${{ runner.os }}-opencv-cache
+
+    - name: Cache spdlog
+      id: spdlog-cache
+      uses: actions/cache@v3
+      with:
+        path: ./spdlog
+        key: ${{ runner.os }}-spdlog-cache
+
+    - if: ${{ steps.spdlog-cache.outputs.cache-hit != 'true' }}
+      name: Build spdlog
       run: |
          git clone https://github.com/gabime/spdlog.git
          cd spdlog && mkdir build && cd build
-         cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} && make
+         cmake .. -GNinja -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_DIR=/usr/local/ && cmake --build .
+  
+    - name: Install spdlog
+      run: sudo make -C ./spdlog/build install
+
+    - if: ${{ steps.opencv-cache.outputs.cache-hit != 'true' }}
+      name: Build OpenCV
+      run: |
+        wget -O opencv.zip https://github.com/opencv/opencv/archive/4.x.zip
+        wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.x.zip
+        unzip opencv.zip
+        mv opencv-4.x opencv
+        unzip opencv_contrib.zip
+        mv opencv_contrib-4.x opencv_contrib
+        cmake -GNinja -S opencv -B opencv/build -D OPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules -D WITH_OPENMP=on -D WITH_TBB=on -D WITH_IPP=on -D CMAKE_BUILD_TYPE=DEBUG -D WITH_CSTRIPES=on -D WITH_OPENGL=on -D BUILD_EXAMPLES=OFF -D BUILD_TESTS=OFF -D BUILD_DOCS=OFF -D BUILD_PERF_TESTS=OFF -D BUILD_OPENCV_PYTHON3=OFF -D WITH_FFMPEG=ON -D WITH_QT=OFF -D WITH_GTK=ON
+        ninja -C opencv/build
+
+    - name: Install OpenCV
+      run: sudo ninja -C opencv/build install && sudo ldconfig
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -GNinja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=DEBUG -S${{github.workspace}}
 
     - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build --config DEBUG
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest -C ${{env.BUILD_TYPE}}
-
+    - name: Test (CMAKE)
+      working-directory: ${{github.workspace}}
+      run: build/bin/gesture_controller__test

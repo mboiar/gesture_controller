@@ -24,3 +24,9 @@ _deps
 !test/data
 
 Makefile
+
+Testing
+
+*.ninja*
+
+!CMakeRC.cmake
