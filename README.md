@@ -1,3 +1,5 @@
+[![CMake](https://github.com/mboiar/gesture_controller/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/mboiar/gesture_controller/actions/workflows/cmake.yml)
+
 # Gesture controller
 
 ## Features
