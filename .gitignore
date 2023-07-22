@@ -26,3 +26,5 @@ _deps
 Makefile
 
 Testing
+
+*.ninja*

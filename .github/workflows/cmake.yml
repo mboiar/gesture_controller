@@ -26,7 +26,7 @@ jobs:
       with:
         path: |
           ./opencv
-          ./opencv-contrib
+          ./opencv_contrib
         key: ${{ runner.os }}-opencv-cache
 
     - name: Cache spdlog
@@ -41,7 +41,7 @@ jobs:
       run: |
          git clone https://github.com/gabime/spdlog.git
          cd spdlog && mkdir build && cd build
-         cmake .. -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_DIR=/usr/local/ && cmake --build .
+         cmake .. -GNinja -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_DIR=/usr/local/ && cmake --build .
   
     - name: Install spdlog
       run: sudo make -C ./spdlog/build install
@@ -49,13 +49,17 @@ jobs:
     - if: ${{ steps.opencv-cache.outputs.cache-hit != 'true' }}
       name: Build OpenCV
       run: |
-        git clone https://github.com/opencv/opencv.git --depth 1
-        git clone https://github.com/opencv/opencv_contrib.git --depth 1
-        cmake -S opencv -B opencv/build -D OPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules -D WITH_OPENMP=on -D WITH_TBB=on -D WITH_IPP=on -D CMAKE_BUILD_TYPE=DEBUG -D WITH_CSTRIPES=on -D WITH_OPENGL=on -D BUILD_EXAMPLES=OFF -D BUILD_TESTS=OFF -D BUILD_DOCS=OFF -D BUILD_PERF_TESTS=OFF -D BUILD_OPENCV_PYTHON3=OFF -D WITH_FFMPEG=ON -D WITH_QT=OFF -D WITH_GTK=ON
-        make -j10 -C opencv/build
+        wget -O opencv.zip https://github.com/opencv/opencv/archive/4.x.zip
+        wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.x.zip
+        unzip opencv.zip
+        mv opencv-4.x opencv
+        unzip opencv_contrib.zip
+        mv opencv_contrib-4.x opencv_contrib
+        cmake -GNinja -S opencv -B opencv/build -D OPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules -D WITH_OPENMP=on -D WITH_TBB=on -D WITH_IPP=on -D CMAKE_BUILD_TYPE=DEBUG -D WITH_CSTRIPES=on -D WITH_OPENGL=on -D BUILD_EXAMPLES=OFF -D BUILD_TESTS=OFF -D BUILD_DOCS=OFF -D BUILD_PERF_TESTS=OFF -D BUILD_OPENCV_PYTHON3=OFF -D WITH_FFMPEG=ON -D WITH_QT=OFF -D WITH_GTK=ON
+        ninja -C opencv/build
 
     - name: Install OpenCV
-      run: sudo make -C opencv/build install && sudo ldconfig
+      run: sudo ninja -C opencv/build install && sudo ldconfig
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
