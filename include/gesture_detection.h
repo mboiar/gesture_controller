@@ -40,7 +40,7 @@ class GestureDetector {
 	cv::dnn::Net classifier_net;
 public:
 	GestureDetector(
-		const string& classifier_model = "pretrained_models/resnet18.onnx"
+		const string& classifier_model = "resources/models/resnet18.onnx"
 	);
 	void visualize(cv::Mat*, const ClassifierOutput&, const cv::Rect&);
 	ClassifierOutput classify(const cv::Mat&);

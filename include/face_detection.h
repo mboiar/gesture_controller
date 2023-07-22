@@ -15,7 +15,7 @@ class FaceDetector {
 	AsyncLogger logger;
 	double scale = 4;
 public:
-	FaceDetector();
+	FaceDetector(const string& detector_path = "resources/models/haarcascade_frontalface_default.xml");
 	cv::Rect generate_bounding_box(const cv::Rect& face_box, const cv::Mat&, int w, int h);
 	Detection detectAndDisplay(const cv::Mat &);
 	void visualize(cv::Mat*, const Detection&);

@@ -3,7 +3,7 @@
 #include "gesture_detection.h"
 
 
-TEST(GestureDetectorTest, classify) {
+TEST(GestureDetectorTest, detect) {
     GestureDetector detector = GestureDetector();
     std::string img_path = "test/data/test.png";
     cv::Mat input_img = cv::imread(img_path, cv::IMREAD_COLOR);
