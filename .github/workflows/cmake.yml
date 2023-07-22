@@ -20,12 +20,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Build spdlog
-      run: |
-         git clone https://github.com/gabime/spdlog.git
-         cd spdlog && mkdir build && cd build
-         cmake .. -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_DIR=/usr/local/ && cmake --build . && sudo make install
-
     - name: Cache OpenCV
       id: opencv-cache
       uses: actions/cache@v3
