@@ -35,8 +35,11 @@ set( MAIN_SRC
     src/face_detection.cpp
     src/gesture_detection.cpp
 )
-add_executable( gesture_controller ${MAIN_SRC} )
-target_link_libraries(gesture_controller PUBLIC ${OpenCV_LIBS} spdlog::spdlog)
+set(MAIN_EXEC ${PROJECT_ID}__main)
+
+add_executable( ${MAIN_EXEC} ${MAIN_SRC} )
+target_link_libraries(${MAIN_EXEC} PUBLIC ${OpenCV_LIBS} spdlog::spdlog)
+target_compile_options(${MAIN_EXEC} PRIVATE -Werror -Wall -Wextra)
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS})
 link_directories( ${CMAKE_BINARY_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)

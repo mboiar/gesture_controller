@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
      //const char* const TELLO_STREAM_URL{ "udp://0.0.0.0:11111" };
 
-     auto verbose = parser.get<bool>("--verbose");
+   //   auto verbose = parser.get<bool>("--verbose");
      auto mode = parser.get<string>("mode");
      auto log_level = parser.get<string>("--log-level");
      auto video_filepath = parser.get<string>("--save-video");
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
      spdlog::set_level(spdlog::level::debug);
 
-     int buffer_len = 5;
+   //   int buffer_len = 5;
      Drone drone = Drone();
      drone.connect();
      drone.streamon();

@@ -9,7 +9,7 @@
 //#include <csignal>
 #include "controller.h"
 //#include "opencv2/core_detect.hpp"
-using namespace cv;
+// using namespace cv;
 
 using std::chrono::system_clock;
 using std::chrono::milliseconds;
@@ -64,7 +64,7 @@ void Controller::run(int frame_refresh_rate) {
 		this->detection_step(&frame);
 
 		// put fps
-		cv::putText(frame, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, (0, 255, 255), 2);
+		cv::putText(frame, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, cv::Scalar(0, 255, 255), 2);
 		// put battery_stat
 		this->_put_battery_on_frame(&frame);
 		
@@ -199,7 +199,7 @@ void Controller::_put_battery_on_frame(cv::Mat* img) {
 	if (this->battery_stat > 0) {
 		text = std::to_string(this->battery_stat) + "%";
 	}
-	cv::putText(*img, text, cv::Point(20, 100), 1, 2, (0, 255, 255), 2);
+	cv::putText(*img, text, cv::Point(20, 100), 1, 2, cv::Scalar(0, 255, 255), 2);
 }
 
 
