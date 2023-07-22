@@ -20,7 +20,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install spdlog
+    - name: Build spdlog
       run: |
          git clone https://github.com/gabime/spdlog.git
          cd spdlog && mkdir build && cd build
@@ -32,6 +32,23 @@ jobs:
       with:
         path: ./opencv/build
         key: ${{ runner.os }}-opencv-cache
+
+    - name: Cache spdlog
+      id: spdlog-cache
+      uses: actions/cache@v3
+      with:
+        path: ./spdlog/build
+        key: ${{ runner.os }}-spdlog-cache
+
+    - if: ${{ steps.spdlog-cache.output.cache-hit != 'true' }}
+      name: Build spdlog
+      run: |
+         git clone https://github.com/gabime/spdlog.git
+         cd spdlog && mkdir build && cd build
+         cmake .. -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_DIR=/usr/local/ && cmake --build .
+  
+    - name: Install spdlog
+      run: sudo make -C ./spdlog/build install
 
     - if: ${{ steps.opencv-cache.output.cache-hit != 'true' }}
       name: Build OpenCV
