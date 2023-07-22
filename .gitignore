@@ -28,3 +28,5 @@ Makefile
 Testing
 
 *.ninja*
+
+!CMakeRC.cmake
