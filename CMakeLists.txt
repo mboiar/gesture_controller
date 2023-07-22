@@ -24,8 +24,6 @@ endif()
 find_package(spdlog REQUIRED)
 find_package(OpenCV REQUIRED)
 
-include(CMakeRC.cmake)
-
 set( MAIN_SRC
     src/main.cpp
     src/controller.cpp
