@@ -42,7 +42,7 @@ jobs:
          cmake .. -GNinja -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_DIR=/usr/local/ && cmake --build .
   
     - name: Install spdlog
-      run: sudo make -C ./spdlog/build install
+      run: sudo ninja -C ./spdlog/build install
 
     - if: ${{ steps.opencv-cache.outputs.cache-hit != 'true' }}
       name: Build OpenCV
