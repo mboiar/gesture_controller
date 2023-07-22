@@ -34,7 +34,7 @@ jobs:
         path: ./spdlog/build
         key: ${{ runner.os }}-spdlog-cache
 
-    - if: ${{ steps.spdlog-cache.output.cache-hit != 'true' }}
+    - if: ${{ steps.spdlog-cache.outputs.cache-hit != 'true' }}
       name: Build spdlog
       run: |
          git clone https://github.com/gabime/spdlog.git
@@ -44,7 +44,7 @@ jobs:
     - name: Install spdlog
       run: sudo make -C ./spdlog/build install
 
-    - if: ${{ steps.opencv-cache.output.cache-hit != 'true' }}
+    - if: ${{ steps.opencv-cache.outputs.cache-hit != 'true' }}
       name: Build OpenCV
       run: |
         git clone https://github.com/opencv/opencv.git --depth 1
