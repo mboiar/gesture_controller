@@ -53,7 +53,7 @@ jobs:
         make -j10 -C opencv/build
 
     - name: Install OpenCV
-      run: sudo make -C ./opencv/build install && sudo ldconfig
+      run: cd opencv/build && ls -a && sudo make install && sudo ldconfig
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
