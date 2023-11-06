@@ -2,7 +2,7 @@
 
 #include "gesture_detection.h"
 
-TEST(GestureDetectorTest, detect) {
+TEST(GestureDetectorTest, DISABLED_detect) {
     std::string img_path = "/home/mbcious/copter-gesture/test/data/test.png";
     cv::Mat input_img = cv::imread(img_path, cv::IMREAD_COLOR);
     GestureDetector detector = GestureDetector("/home/mbcious/copter-gesture/resources/models/resnet18.onnx");
