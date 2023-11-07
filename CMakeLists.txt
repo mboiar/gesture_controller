@@ -64,7 +64,7 @@ if ((DEFINED BUILD_TESTS) AND (BUILD_TESTS STREQUAL "ON"))
     set(SOURCES_FILES_TESTS
         test/test_gesture_detection.cpp
         test/test_face_detection.cpp
-            test/test_controller.cpp test/test_buffer.cpp)
+            test/test_controller.cpp)
     set( TEST_SRC
         src/controller.cpp
             src/device.cpp
