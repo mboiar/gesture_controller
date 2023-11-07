@@ -1,53 +1,51 @@
+/**
+ * @file gesture_detection.hpp
+ *
+ * @brief Gesture detection implementation.
+ *
+ * @author Maks Boiar
+ *
+ */
+
 #ifndef GESTURE_DETECTION_H
 #define GESTURE_DETECTION_H
 
 #include "detection.h"
 #include <map>
-//#include "GRT/GRT.h"
-//#include "darkhelp/DarkHelp.hpp"
 
 using AsyncLogger = std::shared_ptr<spdlog::logger>;
 using std::vector;
 using std::string;
-
-enum Gesture {
-	NoGesture = 0,
-	Left,
-	Right,
-	Up,
-	Down,
-	Forward,
-	Back,
-	Stop,
-	Land,
-	GestureCount
-};
+using landmarks_t = std::vector<double>;
 
 
 struct ClassifierOutput {
 	double score = 0;
-	int classId = 0;
-	vector<double> landmarks;
-	ClassifierOutput(double score, int classId) : score(score), classId(classId) {}
-	ClassifierOutput(double score, int classId, const vector<double>& landmarks) : score(score), classId(classId), landmarks(landmarks) {}
-	ClassifierOutput() : score(0), classId(0) {}
+	int class_id = 0;
+	landmarks_t landmarks;
+	ClassifierOutput(double score, int class_id) : score(score), class_id(class_id) {}
+	ClassifierOutput() : score(0), class_id(0) {}
 };
 
-
+/**
+ * Gesture detection implementation based on a ResNet model.
+ */
 class GestureDetector {
-	double scale = 1.0;
-	AsyncLogger logger;
-	cv::dnn::Net classifier_net;
+	AsyncLogger logger_;
+	cv::dnn::Net detector_;
 public:
-	GestureDetector(
-		const string& classifier_model = "resources/models/resnet18.onnx"
-	);
-	void visualize(cv::Mat*, const ClassifierOutput&, const cv::Rect&);
-	ClassifierOutput classify(const cv::Mat&);
+    /**
+     * A constructor.
+     * @param detector_path path to a ONNX model.
+     */
+	GestureDetector(const string& detector_path);
+	static void visualize(
+            image_t* image, const ClassifierOutput& classified_gesture,
+            const bounding_box_t& gesture_box, const color_t& color = cv::Scalar(0, 255, 255)
+                    );
+	ClassifierOutput detect(const cv::Mat&);
+    static bounding_box_t get_detection_area(const bounding_box_t& face_box, int img_width, int img_height, int w, int h);
+    static cv::Mat preprocess_image(const image_t& img);
 };
-
-void resize_and_pad(cv::Mat& src, cv::Mat& dst, cv::Size new_shape, int pad_color = 0);
-
-void softmax(cv::InputArray inblob, cv::OutputArray outblob);
 
 #endif

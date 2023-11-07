@@ -1,29 +1,20 @@
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
-#include <atomic>
 #include <regex>
 #include<fstream>
 #include <cmath>
-#include <ctime>
-//#include <sys/stat.h>
-//#include <darknet/darknet.h>
 #include <argparse.hpp>
 #include "spdlog/spdlog.h"
-//#include "spdlog/sinks/stdout_color_sinks.h"
 #include "controller.h"
-#include <chrono>
-#include <map>
 #include <string>
 #include <vector>
-#include <opencv2/opencv.hpp>
 
 using std::cerr;
 using std::cout;
 using std::endl;
 using std::vector;
 using std::string;
-using namespace cv;
 
 
 int main(int argc, char* argv[]) {
@@ -67,7 +58,6 @@ int main(int argc, char* argv[]) {
         std::exit(1);
      }
 
-     //const char* const TELLO_STREAM_URL{ "udp://0.0.0.0:11111" };
 
    //   auto verbose = parser.get<bool>("--verbose");
      auto mode = parser.get<string>("mode");
@@ -77,12 +67,14 @@ int main(int argc, char* argv[]) {
 
      spdlog::set_level(spdlog::level::debug);
 
-   //   int buffer_len = 5;
-     Drone drone = Drone();
-     drone.connect();
-     drone.streamon();
+     Device device;
+     device.connect();
+     device.streamon();
 
-     Controller controller = Controller(&drone, false);
+     std::string gesture_detector_path = "/home/mbcious/copter-gesture/resources/models/resnet18.onnx";
+     std::string face_detector_path = "/home/mbcious/copter-gesture/resources/models/haarcascade_frontalface_default.xml";
+
+     Controller controller = Controller(&device, true, face_detector_path, gesture_detector_path);
      controller.run(100);
 
     return 0;

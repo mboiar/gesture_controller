@@ -22,15 +22,15 @@ if ((DEFINED USE_ASAN) AND (USE_ASAN STREQUAL "ON"))
 endif()
 
 find_package(spdlog REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED PATHS /usr/local/debug/)
 
 set( MAIN_SRC
     src/main.cpp
     src/controller.cpp
-    src/drone.cpp
+        src/device.cpp
     src/face_detection.cpp
     src/gesture_detection.cpp
-)
+        src/detection.cpp)
 set(MAIN_EXEC ${PROJECT_ID}__main)
 
 # cmrc_add_resource_library(models ALIAS models::rc NAMESPACE models
@@ -64,13 +64,13 @@ if ((DEFINED BUILD_TESTS) AND (BUILD_TESTS STREQUAL "ON"))
     set(SOURCES_FILES_TESTS
         test/test_gesture_detection.cpp
         test/test_face_detection.cpp
-        )
+            test/test_controller.cpp)
     set( TEST_SRC
         src/controller.cpp
-        src/drone.cpp
+            src/device.cpp
         src/face_detection.cpp
         src/gesture_detection.cpp
-    )
+            src/detection.cpp)
     set(EXEC_TEST ${PROJECT_ID}__test)
     add_executable(${EXEC_TEST} ${TEST_SRC} ${SOURCES_FILES_TESTS} test/main_gtest.cpp)
     target_link_libraries(${EXEC_TEST} PRIVATE GTest::gtest_main ${OpenCV_LIBS} spdlog::spdlog)

@@ -1,15 +1,9 @@
 #include <thread>
-#include <iostream>
 #include <stdexcept>
 #include <atomic>
 #include <map>
 #include <algorithm>
-#include <regex>
-#include<fstream>
-//#include <csignal>
 #include "controller.h"
-//#include "opencv2/core_detect.hpp"
-// using namespace cv;
 
 using std::chrono::system_clock;
 using std::chrono::milliseconds;
@@ -19,60 +13,52 @@ using std::atomic;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 using namespace std::chrono_literals;
 
-const string Controller::cv_window_name = "Drone camera";
 
-void Controller::get_battery_stat() {
-	// modifies battery_stat
+const string Controller::cv_window_name_ = "Device camera";
+
+void Controller::update_battery_stat_() {
 	while (true) {
-		this->battery_stat = drone->get_battery();
-		std::this_thread::sleep_for(milliseconds(WAIT_BATTERY));
+		battery_stat_ = device_->get_battery();
+		std::this_thread::sleep_for(WAIT_BATTERY_);
 	}
 }
 
-void Controller::run(int frame_refresh_rate) {
-	// log
+void Controller::run(interval_ms_t frame_refresh_rate) {
 	std::thread control_thread(&Controller::send_command, this);
 	control_thread.detach();
-	std::thread battery_thread(&Controller::get_battery_stat, this);
+	std::thread battery_thread(&Controller::update_battery_stat_, this);
 	battery_thread.detach();
 
-	cv::VideoCapture cap = drone->get_video_stream();
+	cv::VideoCapture cap = device_->get_video_stream(0);
 	cv::Mat frame;
-	cv::namedWindow(cv_window_name);
+	cv::namedWindow(cv_window_name_);
 
-	double frame_count = 0;
+	unsigned int frame_count = 0;
 	TimePoint start_time = system_clock::now();
 	TimePoint end_time;
 	double fps = 0;
-	logger->info("Starting detection");
-	logger->info("WELL?");
+	logger_->info("Starting detection");
 
 	while (true) {
 		cap >> frame;
 		if (frame.empty()) {
-			logger->info("Skipping empty frame");
+			logger_->info("Skipping empty frame");
 			continue;
 		}
-		// get fps
-		//std::cout << frame.size();
+
 		if (++frame_count >= 10) {
 			end_time = system_clock::now();
-			fps = frame_count / ((end_time - start_time)/1.0s);
+			fps = (double)frame_count / (double)((end_time - start_time)/1.0s);
 			start_time = end_time;
 			frame_count = 0;
 		}
-		this->detection_step(&frame);
+		detect(&frame);
 
-		// put fps
-		cv::putText(frame, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, cv::Scalar(0, 255, 255), 2);
-		// put battery_stat
-		this->_put_battery_on_frame(&frame);
+		put_info_on_frame_(&frame, fps);
 		
-		cv::imshow(cv_window_name, frame);
+		cv::imshow(cv_window_name_, frame);
 
-		// double is_window_visible = cv::getWindowProperty(cv_window_name, cv::WND_PROP_ASPECT_RATIO);
 		char key = (char)cv::waitKey(frame_refresh_rate);
-		// logger->info("Is window visible? {} {}", is_window_visible >= 0, (int)key);
 		if (key == 27 || key == 'q' || (int)key == -29) {
 			// TODO clean-up
 			break;
@@ -81,141 +67,127 @@ void Controller::run(int frame_refresh_rate) {
 	// TODO catch Ctrl+C KeyboardInterrupt (<csignal>?)
 }
 
-void Controller::detection_step(cv::Mat* img) {
-	// sets _last_face, _last_gesture, stop_drone, buffer
-	// accesses face_detector, gesture_detector
-
-	Detection face_detection = this->face_detector.detectAndDisplay(*img);
+void Controller::detect(cv::Mat* img) {
+	DetectionResult face_detection = face_detector_.detect(*img);
 	if (face_detection.score > 0) {
-		this->_last_face = system_clock::now();
-		cv::Scalar color = cv::Scalar(0, 0, 255);
+		last_face_ = system_clock::now();
+		color_t color = cv::Scalar(0, 0, 255);
 
-		face_detector.visualize(img, face_detection);
-		cv::Rect gesture_box = face_detector.generate_bounding_box(face_detection.box, *img, 256, 256);
+		FaceDetector::visualize(img, face_detection);
+		bounding_box_t gesture_box = gesture_detector_.get_detection_area(face_detection.box, img->rows, img->cols, 256, 256);
 		cv::rectangle(*img, gesture_box, color, 2);
 
-		cv::Mat gesture_detection_area = (*img)(gesture_box);
-		cv::imshow("Gesture detection area", gesture_detection_area);
-		//return;
-		// logger->info("{}", gesture_detection_area);
-		ClassifierOutput classified_gesture = gesture_detector.classify(gesture_detection_area);
-		// cv::Rect box_scaled(gesture_detection.box);
-		// box_scaled.x += gesture_box.x;
-		// box_scaled.y += gesture_box.y;
-		// cv::rectangle(*img, box_scaled, color, 2);
+		cv::Mat gesture_detection_region = (*img)(gesture_box);
+		//cv::imshow("Gesture detection area", gesture_detection_area);
+
+		ClassifierOutput classified_gesture = gesture_detector_.detect(gesture_detection_region);
 
 		if (classified_gesture.score > 0) {
-			_last_gesture = system_clock::now();
-			stop_drone = false;
-			// cv::Mat gesture_region = gesture_detection_area(classified_gesture.box);
-			//ClassifierOutput classified_gesture = gesture_detector.classify(gesture_region);
-			buffer.add(classified_gesture.classId);
-			gesture_detector.visualize(img, classified_gesture, gesture_box);
+			last_gesture_ = system_clock::now();
+			stop_device_ = false;
+			buffer_.add(classified_gesture.class_id);
+			gesture_detector_.visualize(img, classified_gesture, gesture_box);
 		}
 	}
 }
 
 void Controller::send_command() {
-	// accesses _last_face, _last_gesture, stop, buffer, is_landing, drone, vel, debug, stop_drone
-	// sets vel, buffer
-
 	while (true) {
-		if (!this->stop_drone) {
-			if ((system_clock::now() - this->_last_face) > FACE_TIMEOUT ||
-				(system_clock::now() - this->_last_gesture) > GESTURE_TIMEOUT) {
-				logger->info("No face or gesture: stopping drone");
-				this->stop();
+		if (!stop_device_) {
+			if ((system_clock::now() - last_face_) > FACE_TIMEOUT_ ||
+				(system_clock::now() - last_gesture_) > GESTURE_TIMEOUT_) {
+				logger_->info("No face or gesture: stopping drone");
+				stop();
 			}
 			else {
-				vector<int> vel = { 0, 0, 0, -1 };
-				Gesture gesture = static_cast<Gesture>(buffer.get());
+				velocity_vector_ms_t velocity = { 0, 0, 0, -1 };
+				auto command = static_cast<Command>(buffer_.get());
 
-				if (gesture != NoGesture) {
-					logger->debug("Received gesture {}", gesture);
-					if (!this->is_landing) {
-						switch (gesture)
+				if (command != NoGesture) {
+					logger_->debug("Received command {}", command);
+					if (!is_busy_) {
+						switch (command)
 						{
 						case NoGesture:
 							break;
 						case Stop:
-							this->stop();
+							stop();
 							break;
 						case Left:
-							vel.at(0) = -1*dw[0];
-							vel.at(3) = 0;
+							velocity[0] = -1*speed_increment_[0];
+							velocity[3] = 0;
 							break;
 						case Right:
-							vel.at(0) = dw[0];
-							vel.at(3) = 0;
+							velocity[0] = speed_increment_[0];
+							velocity[3] = 0;
 							break;
 						case Up:
-							vel.at(2) = dw[2];
-							vel.at(3) = 0;
+							velocity[2] = speed_increment_[2];
+							velocity[3] = 0;
 							break;
 						case Down:
-							vel.at(2) = -1*dw[2];
-							vel.at(3) = 0;
+							velocity[2] = -1*speed_increment_[2];
+							velocity[3] = 0;
 							break;
 						case Forward:
-							vel.at(1) = dw[1];
-							vel.at(3) = 0;
+							velocity[1] = speed_increment_[1];
+							velocity[3] = 0;
 							break;
 						case Back:
-							vel.at(1) = -1*dw[1];
-							vel.at(3) = 0;
+							velocity[1] = -1*speed_increment_[1];
+							velocity[3] = 0;
 							break;
 						case Land:
-							drone->land();
-							this->is_landing = true;
+							device_->land();
+							is_busy_ = true;
 							break;
 						default:
 							break;
 						}
 					}
 
-					if (vel.at(3) != -1 && this->vel != vel) {
-						this->vel = vel;
-						if (!this->debug) {
-							drone->send_rc_control(vel);
+					if (velocity[3] != -1 && velocity_ != velocity) {
+						velocity_ = velocity;
+						if (!dry_run_) {
+							device_->send_rc_control(velocity);
 						}
 					}
 				}
 			}
 		}
-		std::this_thread::sleep_for(milliseconds(WAIT_RC_CONTROL));
+		std::this_thread::sleep_for(WAIT_RC_CONTROL_);
 	}
 }
 
 void Controller::stop() {
-	// modifies vel, stop_drone
-	this->vel = { 0, 0, 0, 0 };
-	this->stop_drone = true;
-	drone->send_rc_control(this->vel);
+	velocity_ = { 0, 0, 0, 0 };
+	stop_device_ = true;
+	device_->send_rc_control(velocity_);
 }
 
-void Controller::_put_battery_on_frame(cv::Mat* img) {
-	// accesses battery_stat
-	string text("No battery info");
-	if (this->battery_stat > 0) {
-		text = std::to_string(this->battery_stat) + "%";
+void Controller::put_info_on_frame_(cv::Mat* frame, double fps/*, TODO bool verbose*/) {
+	string battery_text("No battery info");
+	if (battery_stat_ > 0) {
+		battery_text = std::to_string(battery_stat_) + "%";
 	}
-	cv::putText(*img, text, cv::Point(20, 100), 1, 2, cv::Scalar(0, 255, 255), 2);
+	cv::putText(*frame, battery_text, cv::Point(20, 100), 1, 2, cv::Scalar(0, 255, 255), 2);
+
+    cv::putText(*frame, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, cv::Scalar(0, 255, 255), 2);
 }
 
 
-
-void Buffer::add(size_t elem) {
-	_buffer.at(elem)++;
+void Buffer::add(class_id_t class_id) {
+	buffer_.at(class_id)++;
 }
 
-size_t Buffer::get() {
-		auto max_count = std::max_element(_buffer.begin(), _buffer.end());
-		if (max_count != _buffer.end() && *max_count >= max_len) {
-			size_t val = (std::distance(_buffer.begin(), max_count));
-			_buffer.assign(size, default_val);
-			return val;
+class_id_t Buffer::get() {
+		auto curr_max_count_it = std::max_element(buffer_.begin(), buffer_.end());
+		if (curr_max_count_it != buffer_.end() && *curr_max_count_it >= max_count_) {
+			class_id_t class_id = std::distance(buffer_.begin(), curr_max_count_it);
+			buffer_.assign(size_, 0);
+			return class_id;
 		}
 		else {
-			return default_val;
+			return default_class_id_;
 		}
 }
