@@ -6,7 +6,7 @@ Modular, versatile gesture-based controller written in C++.
 
 ## Demo
 
-https://github.com/mboiar/gesture_controller/blob/main/resources/DroneDemo.mp4
+[![Watch the video](https://img.youtube.com/vi/OrVqN6P2TyY/hqdefault.jpg)](https://youtu.be/OrVqN6P2TyY)
 
 ## Features
 - Easily remappable gesture commands
