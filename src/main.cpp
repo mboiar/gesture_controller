@@ -71,8 +71,8 @@ int main(int argc, char* argv[]) {
      device.connect();
      device.streamon();
 
-     std::string gesture_detector_path = "/home/mbcious/copter-gesture/resources/models/resnet18.onnx";
-     std::string face_detector_path = "/home/mbcious/copter-gesture/resources/models/haarcascade_frontalface_default.xml";
+     std::string gesture_detector_path = "../resources/models/resnet18.onnx";
+     std::string face_detector_path = "../resources/models/haarcascade_frontalface_default.xml";
 
      Controller controller = Controller(&device, true, face_detector_path, gesture_detector_path);
      controller.run(100);
