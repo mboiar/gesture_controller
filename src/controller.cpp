@@ -104,7 +104,7 @@ void Controller::send_command() {
 				auto command = static_cast<Command>(buffer_.get());
 
 				if (command != NoGesture) {
-					logger_->debug("Received command {}", command);
+					logger_->debug("Received command {}", static_cast<int>(command));
 					if (!is_busy_) {
 						switch (command)
 						{
