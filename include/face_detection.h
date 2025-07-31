@@ -49,7 +49,7 @@ public:
      * @param detection
      * @param color
      */
-	static void visualize(image_t* frame, const DetectionResult& detection, const color_t& color = cv::Scalar(0, 255, 255));
+	static void visualize(image_t* frame, const DetectionResult& detection, const color_t& color = cv::Scalar(0, 0, 0));
 };
 
 #endif

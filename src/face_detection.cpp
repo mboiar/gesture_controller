@@ -14,7 +14,7 @@ FaceDetector::FaceDetector(const std::string& detector_path) {
     if (!logger_) {
         logger_ = spdlog::stdout_color_mt(name);
     }
-    logger_->set_level(spdlog::level::info);
+    //logger_->set_level(spdlog::level::info);
 
     detector_ = cv::CascadeClassifier();
     string detector_name = cv::samples::findFileOrKeep(detector_path);
@@ -27,6 +27,8 @@ FaceDetector::FaceDetector(const std::string& detector_path) {
 
 
 DetectionResult FaceDetector::detect(const image_t &image) {
+    auto start = std::chrono::high_resolution_clock::now();
+
     vector<bounding_box_t> faces;
     image_t gray;
     cv::cvtColor(image, gray, cv::COLOR_RGBA2GRAY, 0);
@@ -45,7 +47,8 @@ DetectionResult FaceDetector::detect(const image_t &image) {
     DetectionResult detection = DetectionResult(max_face, score);
     rescale_box(detection.box, detection.box, scale_);
 
-    logger_->debug("Detected face: {:03.1f}% at ({} {} {} {})", score*100, max_face.x, max_face.y, max_face.x+max_face.width, max_face.y+max_face.height);
+    auto stop = std::chrono::high_resolution_clock::now();
+    logger_->debug("Detected face: {:03.1f}% at ({} {} {} {}) duration: {}", score*100, max_face.x, max_face.y, max_face.x+max_face.width, max_face.y+max_face.height, std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
 
     return detection;
 }

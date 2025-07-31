@@ -5,14 +5,14 @@ using cv::dnn::Net;
 using std::string;
 
 std::map<int, std::string> gesture_map = {
-        { 1, "Left"},
-        { 2, "Right"},
-        { 3, "Up"},
-        { 4, "Down"},
-        { 5, "Forward"},
-        { 6, "Back"},
+        { 1, "JogXUp"},
+        { 2, "JogXDown"},
+        { 3, "JogYUp"},
+        { 4, "JogYDown"},
+        { 5, "JogZUp"},
+        { 6, "JogZDown"},
         { 7, "Stop"},
-        { 8, "Land"},
+        { 8, "ToolOn"},
 };
 
 GestureDetector::GestureDetector(const string &detector_path) {
@@ -21,12 +21,14 @@ GestureDetector::GestureDetector(const string &detector_path) {
     if (!logger_) {
         logger_ = spdlog::stdout_color_mt(name);
     }
-    logger_->set_level(spdlog::level::debug);
+    //logger_->set_level(spdlog::level::debug);
 
     detector_ = cv::dnn::readNet(detector_path);
 }
 
 ClassifierOutput GestureDetector::detect(const image_t& img) {
+    auto start = std::chrono::high_resolution_clock::now();
+
     cv::Mat blob = preprocess_image(img);
     detector_.setInput(blob);
     std::vector<std::string> outNames = detector_.getUnconnectedOutLayersNames();
@@ -39,10 +41,14 @@ ClassifierOutput GestureDetector::detect(const image_t& img) {
     score_t confidence_leading_hand;
     cv::Point classIdPoint_gesture;
     score_t confidence_gesture;
+    //for (auto& val : outs) {
+    //    std::cout << val << std::endl;
+    //}
+    auto stop = std::chrono::high_resolution_clock::now();
     cv::minMaxLoc(outs.at(1).reshape(1, 1), nullptr, &confidence_gesture, nullptr, &classIdPoint_gesture);
-    logger_->info("Gesture class: {} conf: {:.2f}", classIdPoint_gesture.x, confidence_gesture);
+    logger_->debug("Gesture class: {} conf: {:.2f} duration {}", classIdPoint_gesture.x, confidence_gesture, std::chrono::duration_cast<std::chrono::milliseconds>(stop-start).count());
     cv::minMaxLoc(outs.at(0).reshape(1, 1), nullptr, &confidence_leading_hand, nullptr, &classIdPoint_leading_hand);
-    logger_->info("Leading hand: {} conf: {:.2f}", classIdPoint_leading_hand.x, confidence_leading_hand);
+    logger_->debug("Leading hand: {} conf: {:.2f}", classIdPoint_leading_hand.x, confidence_leading_hand);
 
     ClassifierOutput classified_gesture = ClassifierOutput(confidence_gesture, classIdPoint_gesture.x);
     return classified_gesture;

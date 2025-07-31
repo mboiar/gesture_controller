@@ -15,6 +15,7 @@
 #include <string>
 #include <chrono>
 #include <atomic>
+#include <mutex>
 
 #include <opencv2/opencv.hpp>
 #include "spdlog/spdlog.h"
@@ -61,10 +62,10 @@ public:
  * Device controller based on gesture recognition.
  */
 class Controller {
-	constexpr static size_t buffer_len_ = 5;
+	constexpr static size_t buffer_len_ = 2;
 	constexpr static int speed_increment_[3] = { 10, 10, 10 };
 	constexpr static milliseconds WAIT_RC_CONTROL_ = milliseconds(500);
-	constexpr static milliseconds WAIT_BATTERY_ = milliseconds(4000);
+	constexpr static milliseconds WAIT_BATTERY_ = milliseconds(100);
 	constexpr static milliseconds FACE_TIMEOUT_ = milliseconds(1000);
 	constexpr static milliseconds GESTURE_TIMEOUT_ = milliseconds(1000);
 
@@ -74,6 +75,10 @@ class Controller {
 	GestureDetector gesture_detector_;
 	Buffer buffer_;
 	atomic<int> battery_stat_ = -1;
+    atomic<bool> servoOk = false;
+    std::mutex modeMutex;
+    string modeText = "";
+    atomic<double> RobotPos[3] = { 0,0,0 };
 	TimePoint last_gesture_ = TimePoint();
 	TimePoint last_face_ = TimePoint();
 	bool stop_device_ = false;
@@ -115,7 +120,7 @@ public:
 		dry_run_(dry_run),
 		face_detector_(face_detector_path),
 		gesture_detector_(gesture_detector_path),
-		buffer_(buffer_len_, GestureCount),
+		buffer_(buffer_len_, 19),
         name_(name) {
 		logger_ = spdlog::get(name_);
 		if (!logger_) {

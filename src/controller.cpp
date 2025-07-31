@@ -5,6 +5,12 @@
 #include <algorithm>
 #include "controller.h"
 
+extern "C" {
+#include <open62541/client_config_default.h>
+#include <open62541/client_highlevel.h>
+
+}
+
 using std::chrono::system_clock;
 using std::chrono::milliseconds;
 using std::string;
@@ -19,6 +25,19 @@ const string Controller::cv_window_name_ = "Device camera";
 void Controller::update_battery_stat_() {
 	while (true) {
 		battery_stat_ = device_->get_battery();
+		servoOk = device_->get_opc_value<bool>("::AsGlobalPV:gMainInterface.Robot.Status.ServoOK");
+		RobotPos[0].store(device_->get_opc_value<double>("::AsGlobalPV:MpDelta4Axis_0.X"));
+		RobotPos[1].store(device_->get_opc_value<double>("::AsGlobalPV:MpDelta4Axis_0.Y"));
+		RobotPos[2].store(device_->get_opc_value<double>("::AsGlobalPV:MpDelta4Axis_0.Z"));
+		UA_String uastr = device_->get_opc_value<UA_String>("::AsGlobalPV:gModeText");
+		char* modeTextVal = (char*)malloc(uastr.length + 1);
+		memcpy(modeTextVal, uastr.data, uastr.length);
+		modeTextVal[uastr.length] = '\0';
+		//logger_->info("Read {}", modeTextVal);
+		//std::lock_guard<std::mutex> lock(modeMutex);
+		modeText = modeTextVal;
+		free(modeTextVal);
+		//std::lock_guard<std::mutex> unlock(modeMutex);
 		std::this_thread::sleep_for(WAIT_BATTERY_);
 	}
 }
@@ -29,7 +48,6 @@ void Controller::run(interval_ms_t frame_refresh_rate) {
 	std::thread battery_thread(&Controller::update_battery_stat_, this);
 	battery_thread.detach();
 
-	cv::VideoCapture cap = device_->get_video_stream(0);
 	cv::Mat frame;
 	cv::namedWindow(cv_window_name_);
 
@@ -40,7 +58,7 @@ void Controller::run(interval_ms_t frame_refresh_rate) {
 	logger_->info("Starting detection");
 
 	while (true) {
-		cap >> frame;
+		device_->get_frame(&frame);
 		if (frame.empty()) {
 			logger_->info("Skipping empty frame");
 			continue;
@@ -52,11 +70,29 @@ void Controller::run(interval_ms_t frame_refresh_rate) {
 			start_time = end_time;
 			frame_count = 0;
 		}
-		detect(&frame);
+		if (modeText != "AUTO") {
+			try {
+				detect(&frame);
+			}
+			catch (const std::exception& e) {
+				std::cerr << "[DETECT] Caught exception: " << e.what() << std::endl;
+			}
+		}
+		//std::cout << "Detection successful" << std::endl;
+		try {
+			put_info_on_frame_(&frame, fps);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "[PUT INFO] Caught exception: " << e.what() << std::endl;
+		}
+		//std::cout << "Visualization successful" << std::endl;
 
-		put_info_on_frame_(&frame, fps);
-		
-		cv::imshow(cv_window_name_, frame);
+		try {
+			cv::imshow(cv_window_name_, frame);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "[IMSHOW] Caught exception: " << e.what() << std::endl;
+		}
 
 		char key = (char)cv::waitKey(frame_refresh_rate);
 		if (key == 27 || key == 'q' || (int)key == -29) {
@@ -68,13 +104,15 @@ void Controller::run(interval_ms_t frame_refresh_rate) {
 }
 
 void Controller::detect(cv::Mat* img) {
+	//std::cout << "0 ";
 	DetectionResult face_detection = face_detector_.detect(*img);
+	//std::cout << "1 ";
 	if (face_detection.score > 0) {
 		last_face_ = system_clock::now();
 		color_t color = cv::Scalar(0, 0, 255);
 
 		FaceDetector::visualize(img, face_detection);
-		bounding_box_t gesture_box = gesture_detector_.get_detection_area(face_detection.box, img->rows, img->cols, 256, 256);
+		bounding_box_t gesture_box = gesture_detector_.get_detection_area(face_detection.box, img->cols, img->rows, 256, 256);
 		cv::rectangle(*img, gesture_box, color, 2);
 
 		cv::Mat gesture_detection_region = (*img)(gesture_box);
@@ -82,11 +120,15 @@ void Controller::detect(cv::Mat* img) {
 
 		ClassifierOutput classified_gesture = gesture_detector_.detect(gesture_detection_region);
 
-		if (classified_gesture.score > 0) {
+		//std::cout << "3 ";
+
+		if (classified_gesture.score > 0 && classified_gesture.class_id != 18) {
 			last_gesture_ = system_clock::now();
 			stop_device_ = false;
 			buffer_.add(classified_gesture.class_id);
+			//std::cout << "4 ";
 			gesture_detector_.visualize(img, classified_gesture, gesture_box);
+			//std::cout << "5 " << std::endl;
 		}
 	}
 }
@@ -96,7 +138,7 @@ void Controller::send_command() {
 		if (!stop_device_) {
 			if ((system_clock::now() - last_face_) > FACE_TIMEOUT_ ||
 				(system_clock::now() - last_gesture_) > GESTURE_TIMEOUT_) {
-				logger_->info("No face or gesture: stopping drone");
+				logger_->info("No face or gesture: stopping");
 				stop();
 			}
 			else {
@@ -104,43 +146,92 @@ void Controller::send_command() {
 				auto command = static_cast<Command>(buffer_.get());
 
 				if (command != NoGesture) {
-					logger_->debug("Received command {}", static_cast<int>(command));
+					logger_->info("Received command {}", static_cast<int>(command));
 					if (!is_busy_) {
 						switch (command)
 						{
 						case NoGesture:
+							device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							break;
 						case Stop:
+							device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							stop();
 							break;
-						case Left:
+						case JogYUp:
 							velocity[0] = -1*speed_increment_[0];
 							velocity[3] = 0;
+							device_->set_opc_value<bool>("::Manual:JogYUp", true, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							break;
-						case Right:
+						case JogYDown:
 							velocity[0] = speed_increment_[0];
 							velocity[3] = 0;
+							device_->set_opc_value<bool>("::Manual:JogYDown", true, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							break;
-						case Up:
+						case JogXUp:
 							velocity[2] = speed_increment_[2];
 							velocity[3] = 0;
+							device_->set_opc_value<bool>("::Manual:JogXUp", true, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							break;
-						case Down:
+						case JogXDown:
 							velocity[2] = -1*speed_increment_[2];
 							velocity[3] = 0;
+							device_->set_opc_value<bool>("::Manual:JogXDown", true, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							break;
-						case Forward:
+						case JogZUp:
 							velocity[1] = speed_increment_[1];
 							velocity[3] = 0;
+							device_->set_opc_value<bool>("::Manual:JogZUp", true, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							break;
-						case Back:
+						case JogZDown:
 							velocity[1] = -1*speed_increment_[1];
 							velocity[3] = 0;
+							device_->set_opc_value<bool>("::Manual:JogZDown", true, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+							device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 							break;
-						case Land:
+						case ToolOn:
 							device_->land();
-							is_busy_ = true;
+							//is_busy_ = true;
 							break;
+						case ToolOff:
 						default:
 							break;
 						}
@@ -160,23 +251,30 @@ void Controller::send_command() {
 }
 
 void Controller::stop() {
+	device_->set_opc_value<bool>("::Manual:JogYUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+	device_->set_opc_value<bool>("::Manual:JogYDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+	device_->set_opc_value<bool>("::Manual:JogXUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+	device_->set_opc_value<bool>("::Manual:JogXDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+	device_->set_opc_value<bool>("::Manual:JogZUp", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
+	device_->set_opc_value<bool>("::Manual:JogZDown", false, &UA_TYPES[UA_TYPES_BOOLEAN]);
 	velocity_ = { 0, 0, 0, 0 };
 	stop_device_ = true;
 	device_->send_rc_control(velocity_);
 }
 
 void Controller::put_info_on_frame_(cv::Mat* frame, double fps/*, TODO bool verbose*/) {
-	string battery_text("No battery info");
-	if (battery_stat_ > 0) {
-		battery_text = std::to_string(battery_stat_) + "%";
-	}
-	cv::putText(*frame, battery_text, cv::Point(20, 100), 1, 2, cv::Scalar(0, 255, 255), 2);
-
-    cv::putText(*frame, std::to_string((int)fps)+" fps", cv::Point(20, 50), 1, 2, cv::Scalar(0, 255, 255), 2);
+	cv::putText(*frame, "ServoOK: "+std::to_string(servoOk), cv::Point(20, 100), 1, 1, cv::Scalar(0, 0, 0), 2);
+	//std::lock_guard<std::mutex> lock(modeMutex);
+	cv::putText(*frame, "Mode: " + modeText, cv::Point(20, 120), 1, 1, cv::Scalar(0, 0, 0), 2);
+	cv::putText(*frame, "PosX: " + std::to_string(RobotPos[0].load()), cv::Point(20, 200), 1, 1, cv::Scalar(0, 0, 0), 2);
+	cv::putText(*frame, "PosY: " + std::to_string(RobotPos[1].load()), cv::Point(20, 220), 1, 1, cv::Scalar(0, 0, 0), 2);
+	cv::putText(*frame, "PosZ: " + std::to_string(RobotPos[2].load()), cv::Point(20, 240), 1, 1, cv::Scalar(0, 0, 0), 2);
+    cv::putText(*frame, std::to_string((int)fps)+" fps", cv::Point(20, 80), 1, 2, cv::Scalar(0, 0, 0), 2);
 }
 
 
 void Buffer::add(class_id_t class_id) {
+	//std::cout << buffer_.size() << " " << class_id << std::endl;
 	buffer_.at(class_id)++;
 }
 

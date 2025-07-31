@@ -6,9 +6,17 @@
 #include <cmath>
 #include <argparse.hpp>
 #include "spdlog/spdlog.h"
-#include "controller.h"
 #include <string>
 #include <vector>
+
+#include "controller.h"
+
+extern "C" {
+#include <open62541/client_config_default.h>
+#include <open62541/client_highlevel.h>
+
+}
+
 
 using std::cerr;
 using std::cout;
@@ -18,22 +26,28 @@ using std::string;
 
 
 int main(int argc, char* argv[]) {
-     argparse::ArgumentParser parser("controller");
+
+    std::cout << "test" << std::endl;
+
+   auto logger_ = spdlog::get("MAIN");
+
+   if (!logger_) {
+        logger_ = spdlog::stdout_color_mt("MAIN");
+    }
+   logger_->set_level(spdlog::level::info);
+
+   logger_->info("Parsing input arguments");
+
+   argparse::ArgumentParser parser("controller");
      parser.add_argument("-v", "--verbose")
         .help("Display additional information during execution")
         .default_value(false)
         .implicit_value(true);
 
      parser.add_argument("--log-level")
-        .help("Choose logging level")
-        .default_value(string("DEBUG"))
-        .action([](const string& value) {
-            static const vector<string> choices = { "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL" };
-            if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
-                return value;
-            }
-            return string{ "DEBUG" };
-        });
+         .help("Choose logging level")
+         .scan<'d', int>()
+         .default_value(0);
 
      parser.add_argument("--save-video")
         .help("Save video feed to a specified file")
@@ -49,34 +63,49 @@ int main(int argc, char* argv[]) {
         throw std::invalid_argument("Choose a valid mode option.");
         });
 
+     parser.add_argument("--server-path")
+         .help("Save video feed to a specified file")
+         .default_value(string{"127.0.0.1:4840" });
+
+     parser.add_description("Control a drone with gestures.");
+
      try {
         parser.parse_args(argc, argv);
      }
      catch (const std::runtime_error& err) {
-        cerr << err.what() << endl;
-        cerr << parser;
-        std::exit(1);
+        logger_->error(err.what());
+        return EXIT_FAILURE;
      }
 
 
    //   auto verbose = parser.get<bool>("--verbose");
-     auto mode = parser.get<string>("mode");
-     auto log_level = parser.get<string>("--log-level");
-     auto video_filepath = parser.get<string>("--save-video");
-     parser.add_description("Control a drone with gestures.");
+     string mode = parser.get<string>("mode");
+     string server_addr = parser.get<string>("--server-path");
+     int log_level = parser.get<int>("--log-level");
+     string video_filepath = parser.get<string>("--save-video");
 
-     spdlog::set_level(spdlog::level::debug);
+     spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 
-     Device device;
-     device.connect();
+
+     logger_->info("Connecting to device");
+     std::string opc_ua_server_name = "opc.tcp://" + server_addr;
+     Device device = Device{};
+     if (device.connect(opc_ua_server_name) < 0) {
+         logger_->info("Program exited with status {}", EXIT_FAILURE);
+         return EXIT_FAILURE;
+     }
      device.streamon();
+
+     //std::cout << cv::getBuildInformation() << std::endl;
 
      std::string gesture_detector_path = "../resources/models/resnet18.onnx";
      std::string face_detector_path = "../resources/models/haarcascade_frontalface_default.xml";
 
      Controller controller = Controller(&device, true, face_detector_path, gesture_detector_path);
-     controller.run(100);
+     logger_->info("Running");
+     controller.run(50);
 
-    return 0;
+     logger_->info("Program exited with status {}", EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
  

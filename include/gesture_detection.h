@@ -41,7 +41,7 @@ public:
 	GestureDetector(const string& detector_path);
 	static void visualize(
             image_t* image, const ClassifierOutput& classified_gesture,
-            const bounding_box_t& gesture_box, const color_t& color = cv::Scalar(0, 255, 255)
+            const bounding_box_t& gesture_box, const color_t& color = cv::Scalar(0, 0, 0)
                     );
 	ClassifierOutput detect(const cv::Mat&);
     static bounding_box_t get_detection_area(const bounding_box_t& face_box, int img_width, int img_height, int w, int h);
