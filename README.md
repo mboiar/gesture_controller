@@ -4,9 +4,13 @@
 
 Modular, versatile gesture-based controller written in C++.
 
-## Demo
+## Drone Software-in-the-Loop Simulation Demo
 
-[![Watch the video](https://img.youtube.com/vi/OrVqN6P2TyY/hqdefault.jpg)](https://youtu.be/OrVqN6P2TyY)
+[![Watch the demo](https://img.youtube.com/vi/OrVqN6P2TyY/hqdefault.jpg)](https://youtu.be/OrVqN6P2TyY)
+
+## Delta Robot PLC Demo
+
+[![Watch the demo](doc/images/thumb.png)](https://youtube.com/shorts/yFY8yK7BDtM)
 
 ## Features
 - Easily remappable gesture commands
@@ -15,7 +19,7 @@ Modular, versatile gesture-based controller written in C++.
 - Face detection with the HaarCascade model 
 - Gesture detection with the ResNet18 model trained on a custom dataset
 
-## Usage
+## Build and run examples
 Compile project with `cmake --build .`
 Run tests with `bin/gesture_controller__test`
 Run app with `bin/gesture_controller`
